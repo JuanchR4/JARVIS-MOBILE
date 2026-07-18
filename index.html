@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JARVIS OS - Escucha Continua</title>
+    <title>JARVIS OS - Dual Robotics Industries</title>
     <style>
-        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
+        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; --gold: #ffcc00; }
         body {
             background: var(--bg); color: var(--glow); 
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -13,35 +13,103 @@
             align-items: center; justify-content: center; overflow: hidden;
             text-transform: uppercase; letter-spacing: 1px;
         }
-        .ui-frame { position: absolute; border: 1px solid rgba(0, 212, 255, 0.1); width: 92%; height: 92%; pointer-events: none; }
-        .reactor-container { position: relative; width: 220px; height: 220px; cursor: pointer; z-index: 10; }
-        .ring {
-            width: 100%; height: 100%; border-radius: 50%; border: 4px double var(--glow);
-            box-shadow: 0 0 20px var(--glow), inset 0 0 15px var(--glow);
-            display: flex; align-items: center; justify-content: center; transition: 0.5s;
+        .ui-frame { position: absolute; border: 1px solid rgba(0, 212, 255, 0.1); width: 92%; height: 92%; pointer-events: none; border-radius: 20px; }
+        
+        /* Contenedor del Reactor mejorado */
+        .reactor-wrapper {
+            position: relative; width: 300px; height: 300px;
+            display: flex; align-items: center; justify-content: center;
         }
-        .core { width: 70px; height: 70px; background: radial-gradient(circle, #fff, var(--glow)); border-radius: 50%; box-shadow: 0 0 40px #fff; }
-        .listening .ring { border-color: var(--danger); box-shadow: 0 0 40px var(--danger); animation: pulse 1s infinite; }
-        .listening .core { background: radial-gradient(circle, #fff, var(--danger)); box-shadow: 0 0 40px var(--danger); }
-        #learning-zone { width: 80%; margin-top: 30px; display: none; }
-        .progress-bg { background: rgba(0,212,255,0.1); border: 1px solid var(--glow); height: 8px; border-radius: 4px; overflow: hidden; }
-        .progress-fill { background: var(--glow); width: 0%; height: 100%; transition: 0.1s; box-shadow: 0 0 10px var(--glow); }
-        #console { font-size: 0.7rem; margin-top: 20px; height: 40px; text-align: center; color: #fff; opacity: 0.8; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
-        .auto-mode { position: fixed; bottom: 20px; font-size: 0.6rem; color: var(--glow); border: 1px solid var(--glow); padding: 5px 10px; border-radius: 5px; }
+
+        .brand-text {
+            position: absolute; width: 100%; text-align: center;
+            font-size: 0.6rem; font-weight: bold; color: var(--glow);
+            top: -40px; letter-spacing: 4px; text-shadow: 0 0 10px var(--glow);
+        }
+
+        .reactor-container {
+            position: relative; width: 240px; height: 240px;
+            cursor: pointer; z-index: 10;
+            background: radial-gradient(circle, rgba(0,212,255,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Aro Exterior Decorativo */
+        .outer-ring {
+            position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.1);
+        }
+
+        /* El Aro Principal (Reactor) */
+        .ring {
+            width: 85%; height: 85%; border-radius: 50%;
+            border: 6px double var(--glow);
+            box-shadow: 0 0 25px var(--glow), inset 0 0 20px var(--glow);
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        /* Hexágonos/Detalles del reactor */
+        .ring::before {
+            content: ''; position: absolute; width: 110%; height: 110%;
+            border-radius: 50%; border: 1px dashed var(--glow);
+            opacity: 0.3; animation: rotate 20s linear infinite;
+        }
+
+        .core {
+            width: 80px; height: 80px;
+            background: radial-gradient(circle, #fff 10%, var(--glow) 60%, transparent 100%);
+            border-radius: 50%; box-shadow: 0 0 50px #fff, 0 0 20px var(--glow);
+            transition: 0.3s;
+        }
+
+        /* Estados de Escucha */
+        .listening .ring {
+            border-color: var(--danger);
+            box-shadow: 0 0 50px var(--danger), inset 0 0 30px var(--danger);
+            transform: scale(1.05);
+        }
+        .listening .core {
+            background: radial-gradient(circle, #fff 10%, var(--danger) 60%, transparent 100%);
+            box-shadow: 0 0 60px var(--danger);
+        }
+        .listening .brand-text { color: var(--danger); text-shadow: 0 0 15px var(--danger); }
+
+        #learning-zone { width: 80%; margin-top: 40px; display: none; }
+        .progress-bg { background: rgba(0,212,255,0.1); border: 1px solid var(--glow); height: 10px; border-radius: 5px; overflow: hidden; }
+        .progress-fill { background: var(--glow); width: 0%; height: 100%; transition: 0.1s; box-shadow: 0 0 15px var(--glow); }
+        
+        #console { font-size: 0.75rem; margin-top: 30px; height: 50px; text-align: center; color: #fff; text-shadow: 0 0 5px var(--glow); }
+        .auto-mode { position: fixed; bottom: 30px; font-size: 0.6rem; color: var(--glow); opacity: 0.6; }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse-glow { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
     </style>
 </head>
 <body>
     <div class="ui-frame"></div>
-    <div id="console">SISTEMA JARVIS ONLINE // ESCUCHA ACTIVA</div>
-    <div class="reactor-container" id="jarvis-btn">
-        <div class="ring" id="ring-element"><div class="core"></div></div>
+    
+    <div class="reactor-wrapper">
+        <div class="brand-text">DUAL ROBOTICS INDUSTRIES</div>
+        <div class="reactor-container" id="jarvis-btn">
+            <div class="outer-ring"></div>
+            <div class="ring" id="ring-element">
+                <div class="core"></div>
+            </div>
+        </div>
     </div>
+
+    <div id="console">SISTEMA INICIALIZADO // PROTOCOLO STARK ACTIVO</div>
+    
     <div id="learning-zone">
-        <div style="font-size: 0.5rem; margin-bottom: 5px;">PROCESANDO DATOS NEURALES...</div>
+        <div style="font-size: 0.55rem; margin-bottom: 8px; color: var(--glow);">CARGANDO BASE DE DATOS...</div>
         <div class="progress-bg"><div class="progress-fill" id="bar"></div></div>
     </div>
-    <div class="auto-mode">MODO MANOS LIBRES: ACTIVO</div>
+
+    <div class="auto-mode">ANALIZADOR DE VOZ CONTINUO ON</div>
 
     <script>
         const btn = document.getElementById('jarvis-btn');
@@ -60,59 +128,48 @@
             isSpeaking = true;
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-ES'; u.rate = 1.0; u.pitch = 0.8;
-            u.onend = () => { 
-                isSpeaking = false;
-                startListening(); // Reanudar escucha al terminar de hablar
-            };
+            u.onend = () => { isSpeaking = false; startListening(); };
             synth.speak(u);
         }
 
         if (!SpeechRecognition) {
-            consoleLog.innerText = "ERROR: RECONOCIMIENTO NO SOPORTADO";
+            consoleLog.innerText = "SISTEMA NO COMPATIBLE CON ESTE NAVEGADOR";
         } else {
             const recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
-            recognition.continuous = false; // Manejamos la continuidad manualmente para evitar cortes
-            recognition.interimResults = false;
-
+            recognition.continuous = false;
+            
             function startListening() {
-                if (!isSpeaking) {
-                    try { recognition.start(); } catch(e) {}
-                }
+                if (!isSpeaking) { try { recognition.start(); } catch(e) {} }
             }
 
-            // Iniciar escucha automática al cargar (requiere una primera interacción del usuario por seguridad del navegador)
-            window.onclick = () => { startListening(); };
-            btn.onclick = () => { startListening(); };
+            window.onclick = () => { startListening(); consoleLog.innerText = "JARVIS EN LÍNEA"; };
 
             recognition.onstart = () => { 
                 ring.classList.add('listening'); 
-                consoleLog.innerText = "ESCUCHANDO..."; 
+                consoleLog.innerText = "ESCUCHANDO ÓRDENES..."; 
             };
 
             recognition.onend = () => { 
                 ring.classList.remove('listening');
-                // Auto-reinicio de la escucha si no está hablando
                 if (!isSpeaking) { setTimeout(startListening, 300); }
             };
 
-            recognition.onerror = () => {
-                if (!isSpeaking) { setTimeout(startListening, 500); }
-            };
+            recognition.onerror = () => { if (!isSpeaking) { setTimeout(startListening, 500); } };
 
             function simulateLearning(topic) {
                 learnZone.style.display = 'block';
                 let p = 0;
                 const int = setInterval(() => {
                     p += 2; bar.style.width = p + "%";
-                    consoleLog.innerText = `APRENDIENDO: ${topic.toUpperCase()} [${p}%]`;
+                    consoleLog.innerText = `INDEXANDO: ${topic.toUpperCase()} [${p}%]`;
                     if(p >= 100) {
                         clearInterval(int);
-                        speak("Análisis completado, señor. La información ha sido indexada.");
+                        speak("Proceso terminado. Datos guardados en la nube de Dual Robotics.");
                         localStorage.setItem('memoria_' + topic, "Datos registrados.");
                         setTimeout(() => { learnZone.style.display = 'none'; consoleLog.innerText = "SISTEMA EN ESPERA"; }, 3000);
                     }
-                }, 100);
+                }, 800 / 20); // Un poco más rápido para efecto visual
             }
 
             recognition.onresult = (e) => {
@@ -121,11 +178,11 @@
 
                 if (esperandoConfirmacion) {
                     if (cmd.includes("sí") || cmd.includes("si") || cmd.includes("hazlo") || cmd.includes("procede")) {
-                        speak("Autorización recibida.");
+                        speak("Entendido. Ejecutando ahora.");
                         if(accionPendiente) accionPendiente();
                         esperandoConfirmacion = false; accionPendiente = null;
                     } else if (cmd.includes("no") || cmd.includes("cancela")) {
-                        speak("Protocolo cancelado.");
+                        speak("Operación abortada.");
                         esperandoConfirmacion = false; accionPendiente = null;
                     }
                     return;
@@ -133,7 +190,7 @@
 
                 if(cmd.includes("aprende") || cmd.includes("aprendete")) {
                     const topic = cmd.replace("aprendete", "").replace("aprende", "").trim();
-                    simulateLearning(topic || "Nuevos Datos");
+                    simulateLearning(topic || "Datos Generales");
                 } 
                 else if(cmd.includes("llama a")) {
                     const nombre = cmd.replace("llama a", "").trim();
@@ -141,27 +198,27 @@
                     if(numero) {
                         accionPendiente = () => { window.location.href = `tel:${numero}`; };
                         esperandoConfirmacion = true;
-                        speak(`Señor, ¿desea que inicie la llamada con ${nombre}?`);
-                    } else { speak(`No tengo el número de ${nombre}.`); }
+                        speak(`Señor, ¿procedo con la llamada a ${nombre}?`);
+                    } else { speak(`No hay registros de ${nombre} en Dual Robotics.`); }
                 } 
                 else if(cmd.includes("whatsapp a")) {
                     const partes = cmd.split("con el mensaje");
                     const nombre = partes[0].replace("envía un whatsapp a", "").replace("mándale un whatsapp a", "").replace("envía whatsapp a", "").trim();
-                    const mensaje = partes[1] ? partes[1].trim() : "Hola";
+                    const mensaje = partes[1] ? partes[1].trim() : "Mensaje de Jarvis";
                     const numero = localStorage.getItem('contacto_' + nombre);
                     if(numero) {
                         accionPendiente = () => { window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank'); };
                         esperandoConfirmacion = true;
-                        speak(`¿Confirma el envío del mensaje a ${nombre}?`);
+                        speak(`Confirmación para WhatsApp a ${nombre}. ¿Envío el mensaje?`);
                     } else { speak(`No tengo el contacto de ${nombre}.`); }
                 } 
                 else if(cmd.includes("número de") && cmd.includes("es")) {
                     const p = cmd.split("número de")[1].split("es");
                     localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
-                    speak("Contacto guardado.");
+                    speak("Contacto indexado con éxito.");
                 } 
-                else if(cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta")) {
-                    speak("A su servicio, señor. Modo manos libres activado.");
+                else if(cmd.includes("hola") || cmd.includes("jarvis")) {
+                    speak("Bienvenido de nuevo, señor. ¿En qué trabaja Dual Robotics hoy?");
                 }
             };
         }
