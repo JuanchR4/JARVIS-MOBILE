@@ -6,22 +6,37 @@
     <title>JARVIS OS - Dual Robotics Industries</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;600&display=swap" rel="stylesheet">
     <style>
-        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; --glass: rgba(0, 212, 255, 0.1); }
+        :root {
+            --glow: #00d4ff;
+            --danger: #ff3c00;
+            --bg: #000b0d;
+            --glass: rgba(0, 212, 255, 0.1);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Exo 2', sans-serif; cursor: none; }
         body { background: var(--bg); color: var(--glow); height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
         .bg-grid { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px); background-size: 50px 50px; z-index: -1; animation: grid-move 20s linear infinite; }
         @keyframes grid-move { from { background-position: 0 0; } to { background-position: 50px 50px; } }
+
         .hud-frame { position: absolute; width: 95%; height: 95%; border: 1px solid rgba(0, 212, 255, 0.2); pointer-events: none; }
+        
         .branding { font-family: 'Orbitron', sans-serif; letter-spacing: 5px; margin-bottom: 40px; text-shadow: 0 0 15px var(--glow); text-align: center; }
+
         .reactor-container { position: relative; width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; }
         .reactor-outer { position: absolute; width: 100%; height: 100%; border: 2px dashed var(--glow); border-radius: 50%; animation: spin 10s linear infinite; opacity: 0.3; }
+        
         .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 30px var(--glow), inset 0 0 30px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; z-index: 10; }
         .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 40px #fff, 0 0 60px var(--glow); transition: 0.3s; }
+        
         .listening { border-color: var(--danger); box-shadow: 0 0 50px var(--danger), inset 0 0 30px var(--danger); transform: scale(1.05); }
         .listening .core { box-shadow: 0 0 40px #fff, 0 0 60px var(--danger); }
+
         .status-bar { position: absolute; bottom: 40px; width: 80%; display: flex; justify-content: space-between; font-size: 0.7rem; border-top: 1px solid rgba(0, 212, 255, 0.2); padding-top: 15px; }
-        #console { font-family: 'Orbitron', sans-serif; color: #fff; font-size: 0.8rem; text-align: center; max-width: 80%; line-height: 1.5; text-shadow: 0 0 5px var(--glow); margin-top: 20px; }
+        #console { font-family: 'Orbitron', sans-serif; color: #fff; font-size: 0.8rem; text-align: center; max-width: 80%; line-height: 1.5; text-shadow: 0 0 5px var(--glow); margin-top: 20px; min-height: 3em; }
+
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        
         #cursor { width: 20px; height: 20px; border: 1px solid var(--glow); position: fixed; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%); z-index: 999; }
     </style>
 </head>
@@ -31,7 +46,7 @@
     <div id="cursor"></div>
 
     <div class="branding">
-        <h2 id="top-text">JARVIS OS</h2>
+        <h2>JARVIS OS</h2>
         <p style="font-size: 0.6rem; opacity: 0.7;">DUAL ROBOTICS INDUSTRIES</p>
     </div>
 
@@ -59,12 +74,13 @@
         let recognition;
         let isStarted = false;
         
-        // Memoria de aprendizaje local (Se expandirá dinámicamente)
+        // Memoria local de aprendizaje
         const localMemory = {
             "quién eres": "Soy Jarvis, la interfaz de inteligencia artificial de Dual Robotics Industries.",
             "dual robotics": "Dual Robotics Industries es su corporación tecnológica señor. Estamos liderando el futuro de la robótica.",
-            "voltaje": "El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios, según su ficha técnica.",
-            "l298n": "El módulo L 298 N es un controlador de motores de doble puente H. Soporta hasta 35 voltios y 2 amperios por canal.",
+            "voltaje": "El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios.",
+            "l298n": "El módulo L 298 N es un controlador de motores de doble puente H. Soporta hasta 35 voltios.",
+            "titanio": "El punto de fusión del titanio es de mil seiscientos sesenta y ocho grados Celsius, señor.",
             "hola": "A su servicio, señor. ¿Qué protocolos iniciamos hoy?",
             "buenos días": "Buenos días, señor. Todos los sistemas operativos."
         };
@@ -98,11 +114,7 @@
         }
 
         function startListening() {
-            try {
-                recognition.start();
-            } catch(e) {
-                console.log("Re-start preventivo");
-            }
+            try { recognition.start(); } catch(e) {}
         }
 
         function initJarvis() {
@@ -125,6 +137,8 @@
             recognition.onerror = (e) => {
                 if (isStarted && e.error !== 'no-speech') {
                     setTimeout(startListening, 500);
+                } else if (e.error === 'no-speech' && isStarted) {
+                    startListening();
                 }
             };
 
@@ -144,14 +158,11 @@
                 if (!found) {
                     if (cmd.includes("busca") || cmd.includes("internet")) {
                         const query = cmd.replace("busca", "").replace("en internet", "").trim();
-                        speak(`Entendido, señor. Iniciando protocolos de búsqueda sobre ${query}.`);
+                        speak(`Entendido. Iniciando protocolos de búsqueda sobre ${query}.`);
                         setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
                     } else {
-                        // AQUÍ ES DONDE ÉL ME PREGUNTA A MÍ
-                        speak("No tengo ese dato en memoria local. Consultando al mainframe central.");
-                        // Enviamos señal visual de "Pensando"
-                        mainframeStatus.innerText = "MAINFRAME: PROCESANDO PETICIÓN...";
-                        mainframeStatus.style.color = "#ffcc00";
+                        speak("No tengo ese dato en memoria local. Consultando al mainframe.");
+                        mainframeStatus.innerText = "MAINFRAME: ENVIANDO PETICIÓN...";
                     }
                 }
             };
