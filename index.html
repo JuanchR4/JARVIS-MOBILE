@@ -58,13 +58,12 @@
         let accionPendiente = null;
         let isSpeaking = false;
         let recognition = null;
-        let autoRestart = true;
 
         function speak(text) {
             isSpeaking = true;
+            // Detener reconocimiento antes de hablar
             if (recognition) {
-                autoRestart = false; 
-                recognition.stop();
+                try { recognition.abort(); } catch(e) {}
             }
             
             const u = new SpeechSynthesisUtterance(text);
@@ -72,12 +71,23 @@
             
             u.onend = () => {
                 isSpeaking = false;
-                autoRestart = true;
-                if (recognition) recognition.start();
+                // Pequeño delay para evitar ecos y reiniciar escucha
+                setTimeout(() => {
+                    if (!isSpeaking) startListening();
+                }, 500);
             };
             
             synth.speak(u);
             consoleLog.innerText = "JARVIS: " + text.toUpperCase();
+        }
+
+        function startListening() {
+            if (isSpeaking) return;
+            try {
+                recognition.start();
+            } catch(e) {
+                // Si ya está iniciado, no pasa nada
+            }
         }
 
         if (!SpeechRecognition) {
@@ -85,8 +95,7 @@
         } else {
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
-            recognition.continuous = false; // Manejamos la continuidad manualmente para mayor control
-            recognition.interimResults = false;
+            recognition.continuous = false; 
 
             recognition.onstart = () => {
                 ring.classList.add('listening');
@@ -95,9 +104,16 @@
 
             recognition.onend = () => {
                 ring.classList.remove('listening');
-                // Reiniciar automáticamente si no estamos hablando
-                if (autoRestart && !isSpeaking) {
-                    try { recognition.start(); } catch(e) {}
+                // Reiniciar automáticamente siempre que no estemos hablando
+                if (!isSpeaking) {
+                    setTimeout(startListening, 300);
+                }
+            };
+
+            recognition.onerror = (event) => {
+                consoleLog.innerText = "REINICIANDO SENSORES...";
+                if (event.error !== 'no-speech') {
+                    console.log('Error de reconocimiento:', event.error);
                 }
             };
 
@@ -110,14 +126,13 @@
                         speak("Autorización recibida.");
                         if(accionPendiente) accionPendiente();
                         esperandoConfirmacion = false; accionPendiente = null;
-                    } else {
+                    } else if (cmd.includes("no") || cmd.includes("cancela") || cmd.includes("abortar")) {
                         speak("Protocolo cancelado.");
                         esperandoConfirmacion = false; accionPendiente = null;
                     }
                     return;
                 }
 
-                // LÓGICA DE COMANDOS
                 if (cmd.includes("aprende") || cmd.includes("aprendete")) {
                     const topic = cmd.replace("aprendete", "").replace("aprende", "").trim();
                     simulateLearning(topic || "Nuevos Datos");
@@ -129,7 +144,7 @@
                         accionPendiente = () => { window.location.href = `tel:${numero}`; };
                         esperandoConfirmacion = true;
                         speak(`Señor, ¿desea que inicie la llamada con ${nombre}?`);
-                    } else { speak(`No tengo el número de ${nombre} en mis registros.`); }
+                    } else { speak(`No tengo el número de ${nombre}.`); }
                 } 
                 else if (cmd.includes("whatsapp a")) {
                     const partes = cmd.split("con el mensaje");
@@ -148,13 +163,13 @@
                     speak("Contacto indexado.");
                 } 
                 else if (cmd.includes("dual robotics") || cmd.includes("dedicas")) {
-                    speak("Dual Robotics Industries es una división líder en robótica avanzada. Actualmente trabajamos en prototipos inteligentes y su propio asistente personal.");
+                    speak("Dual Robotics Industries es una división líder en robótica avanzada. Actualmente trabajamos en prototipos inteligentes.");
                 }
-                else if (cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("estás ahí")) {
-                    speak("A su servicio, señor. Sistemas operativos.");
+                else if (cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta")) {
+                    speak("Sistemas en línea. A su servicio, señor.");
                 } 
                 else {
-                    speak("Entendido, señor. ¿Alguna otra instrucción?");
+                    speak("Instrucción recibida. Procesando.");
                 }
             };
 
@@ -162,20 +177,18 @@
                 learnZone.style.display = 'block';
                 let p = 0;
                 const int = setInterval(() => {
-                    p += 5; bar.style.width = p + "%";
+                    p += 10; bar.style.width = p + "%";
                     if(p >= 100) {
                         clearInterval(int);
-                        speak("Análisis de " + topic + " completado. Datos guardados.");
-                        setTimeout(() => { learnZone.style.display = 'none'; }, 3000);
+                        speak("Análisis de " + topic + " completado.");
+                        setTimeout(() => { learnZone.style.display = 'none'; }, 2000);
                     }
-                }, 150);
+                }, 100);
             }
 
             document.body.onclick = () => {
-                if (!isSpeaking) {
-                    try { recognition.start(); } catch(e) {}
-                    consoleLog.innerText = "SISTEMA INICIADO";
-                }
+                startListening();
+                consoleLog.innerText = "SISTEMA ACTIVO";
             };
         }
     </script>
