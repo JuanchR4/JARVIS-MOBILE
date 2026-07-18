@@ -50,16 +50,22 @@
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let esperandoConfirmacion = false;
         let accionPendiente = null;
+
         function speak(text) {
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-ES'; u.rate = 1.0; u.pitch = 0.8;
+            u.onend = () => { if (esperandoConfirmacion) { setTimeout(() => { recognition.start(); }, 500); } };
             synth.speak(u);
         }
+
         if (!SpeechRecognition) {
             consoleLog.innerText = "ERROR: RECONOCIMIENTO NO SOPORTADO";
         } else {
             const recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
             function simulateLearning(topic) {
                 learnZone.style.display = 'block';
                 let p = 0;
@@ -68,40 +74,69 @@
                     consoleLog.innerText = `APRENDIENDO: ${topic.toUpperCase()} [${p}%]`;
                     if(p >= 100) {
                         clearInterval(int);
-                        speak("Análisis completado, señor.");
+                        speak("Análisis completado, señor. La información ha sido indexada.");
                         localStorage.setItem('memoria_' + topic, "Datos registrados.");
                         setTimeout(() => { learnZone.style.display = 'none'; consoleLog.innerText = "SISTEMA EN ESPERA"; }, 3000);
                     }
                 }, 100);
             }
-            btn.onclick = () => { recognition.start(); };
+
+            btn.onclick = () => { if(!esperandoConfirmacion) recognition.start(); };
+
             recognition.onstart = () => { ring.classList.add('listening'); consoleLog.innerText = "ESCUCHANDO..."; };
-            recognition.onend = () => ring.classList.remove('listening');
+            recognition.onend = () => { ring.classList.remove('listening'); };
+
             recognition.onresult = (e) => {
                 const cmd = e.results[0][0].transcript.toLowerCase();
                 consoleLog.innerText = ">> " + cmd;
+
                 if (esperandoConfirmacion) {
-                    if (cmd.includes("sí") || cmd.includes("hazlo")) {
+                    if (cmd.includes("sí") || cmd.includes("si") || cmd.includes("hazlo") || cmd.includes("procede")) {
                         speak("Autorización recibida.");
                         if(accionPendiente) accionPendiente();
-                    } else { speak("Cancelado."); }
-                    esperandoConfirmacion = false; accionPendiente = null;
+                        esperandoConfirmacion = false; accionPendiente = null;
+                    } else {
+                        speak("Protocolo cancelado.");
+                        esperandoConfirmacion = false; accionPendiente = null;
+                    }
                     return;
                 }
-                if(cmd.includes("aprende")) {
-                    simulateLearning(cmd.replace("aprende", "").trim());
-                } else if(cmd.includes("llama a")) {
-                    const n = cmd.replace("llama a", "").trim();
-                    const num = localStorage.getItem('contacto_' + n);
-                    if(num) {
-                        accionPendiente = () => { window.location.href = "tel:" + num; };
-                        esperandoConfirmacion = true; speak("¿Confirma la llamada?");
-                    } else { speak("Contacto no encontrado."); }
-                } else if(cmd.includes("número de") && cmd.includes("es")) {
+
+                if(cmd.includes("aprende") || cmd.includes("aprendete")) {
+                    const topic = cmd.replace("aprendete", "").replace("aprende", "").trim();
+                    simulateLearning(topic || "Nuevos Datos");
+                } 
+                else if(cmd.includes("llama a")) {
+                    const nombre = cmd.replace("llama a", "").trim();
+                    const numero = localStorage.getItem('contacto_' + nombre);
+                    if(numero) {
+                        accionPendiente = () => { window.location.href = `tel:${numero}`; };
+                        esperandoConfirmacion = true;
+                        speak(`Señor, ¿desea que inicie la llamada con ${nombre}?`);
+                    } else { speak(`No tengo el número de ${nombre}.`); }
+                } 
+                else if(cmd.includes("whatsapp a")) {
+                    const partes = cmd.split("con el mensaje");
+                    const nombre = partes[0].replace("envía un whatsapp a", "").replace("mándale un whatsapp a", "").replace("envía whatsapp a", "").trim();
+                    const mensaje = partes[1] ? partes[1].trim() : "Hola";
+                    const numero = localStorage.getItem('contacto_' + nombre);
+                    if(numero) {
+                        accionPendiente = () => { window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank'); };
+                        esperandoConfirmacion = true;
+                        speak(`¿Confirma el envío del mensaje a ${nombre}?`);
+                    } else { speak(`No tengo el contacto de ${nombre}.`); }
+                } 
+                else if(cmd.includes("número de") && cmd.includes("es")) {
                     const p = cmd.split("número de")[1].split("es");
                     localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
-                    speak("Guardado.");
-                } else { speak("Entendido."); }
+                    speak("Contacto guardado.");
+                } 
+                else if(cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("estás ahí")) {
+                    speak("A su servicio, señor. Sistemas al cien por ciento.");
+                } 
+                else { 
+                    speak("Entendido, señor. ¿Hay algo más en lo que pueda ayudar?"); 
+                }
             };
         }
     </script>
