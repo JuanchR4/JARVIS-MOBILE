@@ -74,13 +74,12 @@
         let recognition;
         let isStarted = false;
         
-        // Memoria local de aprendizaje
+        // Memoria local de aprendizaje actualizada
         const localMemory = {
+            "l293d": "El controlador L 293 D soporta un voltaje máximo de alimentación de hasta 36 voltios y una corriente de hasta 600 miliamperios por canal.",
+            "l293": "El L 293 soporta voltajes de alimentación entre 4.5 y 36 voltios.",
             "quién eres": "Soy Jarvis, la interfaz de inteligencia artificial de Dual Robotics Industries.",
-            "dual robotics": "Dual Robotics Industries es su corporación tecnológica señor. Estamos liderando el futuro de la robótica.",
-            "voltaje": "El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios.",
-            "l298n": "El módulo L 298 N es un controlador de motores de doble puente H. Soporta hasta 35 voltios.",
-            "titanio": "El punto de fusión del titanio es de mil seiscientos sesenta y ocho grados Celsius, señor.",
+            "voltaje": "Para el L 293 D, el voltaje máximo es de 36 voltios.",
             "hola": "A su servicio, señor. ¿Qué protocolos iniciamos hoy?",
             "buenos días": "Buenos días, señor. Todos los sistemas operativos."
         };
@@ -156,14 +155,8 @@
                 }
 
                 if (!found) {
-                    if (cmd.includes("busca") || cmd.includes("internet")) {
-                        const query = cmd.replace("busca", "").replace("en internet", "").trim();
-                        speak(`Entendido. Iniciando protocolos de búsqueda sobre ${query}.`);
-                        setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
-                    } else {
-                        speak("No tengo ese dato en memoria local. Consultando al mainframe.");
-                        mainframeStatus.innerText = "MAINFRAME: ENVIANDO PETICIÓN...";
-                    }
+                    speak("Ese dato no está en mi registro local sobre componentes L 293 D. Consultando al mainframe.");
+                    mainframeStatus.innerText = "MAINFRAME: BUSCANDO L293D...";
                 }
             };
 
