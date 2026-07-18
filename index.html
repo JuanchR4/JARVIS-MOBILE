@@ -5,183 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JARVIS OS - Dual Robotics Industries</title>
     <style>
-        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; --gold: #ffcc00; }
-        body {
-            background: var(--bg); color: var(--glow); 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0; height: 100vh; display: flex; flex-direction: column; 
-            align-items: center; justify-content: center; overflow: hidden;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .ui-frame { position: absolute; border: 1px solid rgba(0, 212, 255, 0.1); width: 94%; height: 94%; pointer-events: none; border-radius: 20px; }
-        .branding { position: absolute; top: 10%; text-align: center; width: 100%; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); font-size: 0.9rem; }
-        .reactor-container { position: relative; width: 250px; height: 250px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; }
-        .outer-ring { position: absolute; width: 100%; height: 100%; border: 1px dashed rgba(0, 212, 255, 0.3); border-radius: 50%; animation: rotate 10s linear infinite; }
-        .ring {
-            width: 80%; height: 80%; border-radius: 50%; border: 6px double var(--glow);
-            box-shadow: 0 0 25px var(--glow), inset 0 0 20px var(--glow);
-            display: flex; align-items: center; justify-content: center; transition: 0.4s;
-            background: rgba(0, 212, 255, 0.05);
-        }
-        .core { width: 60px; height: 60px; background: radial-gradient(circle, #fff 10%, var(--glow) 60%); border-radius: 50%; box-shadow: 0 0 50px #fff, 0 0 30px var(--glow); z-index: 5; }
-        .listening .ring { border-color: var(--danger); box-shadow: 0 0 50px var(--danger), inset 0 0 30px var(--danger); animation: pulse 0.8s infinite; }
-        .listening .core { background: radial-gradient(circle, #fff 10%, var(--danger) 60%); box-shadow: 0 0 50px #fff, 0 0 30px var(--danger); }
-        #learning-zone { width: 80%; margin-top: 40px; display: none; }
-        .progress-bg { background: rgba(0,212,255,0.1); border: 1px solid var(--glow); height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
-        .progress-fill { background: var(--glow); width: 0%; height: 100%; transition: 0.1s; box-shadow: 0 0 15px var(--glow); }
-        #console { font-size: 0.75rem; margin-top: 30px; height: 50px; text-align: center; color: #fff; opacity: 0.9; max-width: 80%; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
+        body { background: var(--bg); color: var(--glow); font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-transform: uppercase; }
+        .branding { margin-bottom: 20px; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); }
+        .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 20px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .core { width: 60px; height: 60px; background: white; border-radius: 50%; box-shadow: 0 0 30px white, 0 0 50px var(--glow); }
+        .listening { border-color: var(--danger); box-shadow: 0 0 30px var(--danger); }
+        #console { margin-top: 30px; font-size: 0.8rem; text-align: center; height: 40px; width: 80%; }
     </style>
 </head>
-<body>
-    <div class="ui-frame"></div>
+<body onclick="start()">
     <div class="branding">DUAL ROBOTICS INDUSTRIES</div>
-    <div id="console">PROTOCOLO STARK ONLINE // TOQUE PARA INICIAR</div>
-    <div class="reactor-container" id="jarvis-btn">
-        <div class="outer-ring"></div>
-        <div class="ring" id="ring-element"><div class="core"></div></div>
-    </div>
-    <div id="learning-zone">
-        <div id="learn-label" style="font-size: 0.6rem; margin-bottom: 5px;">CARGANDO MATRIZ NEURAL...</div>
-        <div class="progress-bg"><div class="progress-fill" id="bar"></div></div>
-    </div>
+    <div class="reactor" id="ring"><div class="core"></div></div>
+    <div id="console">TOQUE PARA INICIAR PROTOCOLO</div>
+
     <script>
-        const ring = document.getElementById('ring-element');
+        const ring = document.getElementById('ring');
         const consoleLog = document.getElementById('console');
-        const bar = document.getElementById('bar');
-        const learnZone = document.getElementById('learning-zone');
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        let esperandoConfirmacion = false;
-        let accionPendiente = null;
-        let isSpeaking = false;
-        let recognition = null;
+        let recognition;
+        let active = false;
 
         function speak(text) {
-            isSpeaking = true;
-            if (recognition) {
-                try { recognition.abort(); } catch(e) {}
-            }
-            
+            if (recognition) recognition.stop();
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'es-ES'; u.rate = 1.0; u.pitch = 0.8;
-            
-            u.onend = () => {
-                isSpeaking = false;
-                setTimeout(() => { if (!isSpeaking) startListening(); }, 500);
-            };
-            
+            u.lang = 'es-ES';
+            u.onend = () => { if(active) recognition.start(); };
             synth.speak(u);
-            consoleLog.innerText = "JARVIS: " + text.toUpperCase();
+            consoleLog.innerText = "JARVIS: " + text;
         }
 
-        function startListening() {
-            if (isSpeaking) return;
-            try {
-                recognition.start();
-            } catch(e) {}
-        }
-
-        if (!SpeechRecognition) {
-            consoleLog.innerText = "ERROR: RECONOCIMIENTO NO SOPORTADO";
-        } else {
+        function start() {
+            if (active) return;
+            active = true;
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
-            recognition.continuous = false; 
-
-            recognition.onstart = () => {
-                ring.classList.add('listening');
-                consoleLog.innerText = "ESCUCHANDO...";
-            };
-
-            recognition.onend = () => {
-                ring.classList.remove('listening');
-                if (!isSpeaking) setTimeout(startListening, 300);
-            };
-
+            recognition.onstart = () => ring.classList.add('listening');
+            recognition.onend = () => ring.classList.remove('listening');
+            
             recognition.onresult = (e) => {
                 const cmd = e.results[0][0].transcript.toLowerCase();
                 consoleLog.innerText = ">> " + cmd;
-                
-                if (esperandoConfirmacion) {
-                    if (cmd.includes("sí") || cmd.includes("si") || cmd.includes("hazlo") || cmd.includes("procede")) {
-                        speak("Autorización recibida.");
-                        if(accionPendiente) accionPendiente();
-                        esperandoConfirmacion = false; accionPendiente = null;
-                    } else if (cmd.includes("no") || cmd.includes("cancela") || cmd.includes("abortar")) {
-                        speak("Protocolo cancelado.");
-                        esperandoConfirmacion = false; accionPendiente = null;
-                    }
-                    return;
-                }
 
-                // LÓGICA DE DATOS ESPECÍFICOS (L298N)
-                if (cmd.includes("voltaje") && (cmd.includes("l298") || cmd.includes("l 298"))) {
-                    speak("Según la ficha técnica, el módulo L298N soporta un voltaje máximo de alimentación de hasta 35 voltios, aunque se recomienda operar hasta 12 o 24 voltios para mayor seguridad de los componentes.");
-                }
-                else if (cmd.includes("corriente") && (cmd.includes("l298") || cmd.includes("l 298"))) {
-                    speak("El controlador L298N puede manejar una corriente pico de hasta 2 amperios por canal.");
-                }
-                else if (cmd.includes("aprende") || cmd.includes("aprendete")) {
-                    const topic = cmd.split("aprende")[1] || cmd.split("aprendete")[1] || "Nuevos Datos";
-                    simulateLearning(topic.trim());
-                } 
-                else if (cmd.includes("llama a")) {
-                    const nombre = cmd.split("llama a")[1].trim();
-                    const numero = localStorage.getItem('contacto_' + nombre);
-                    if(numero) {
-                        accionPendiente = () => { window.location.href = `tel:${numero}`; };
-                        esperandoConfirmacion = true;
-                        speak("Señor, ¿desea que inicie la llamada con " + nombre + "?");
-                    } else { speak("No tengo el número de " + nombre + " en mis archivos."); }
-                } 
-                else if (cmd.includes("whatsapp")) {
-                    const partes = cmd.split("con el mensaje");
-                    const nombrePart = partes[0].includes("a") ? partes[0].split("a")[1] : partes[0];
-                    const nombre = nombrePart.replace("enviar", "").replace("mándale", "").replace("whatsapp", "").trim();
-                    const mensaje = partes[1] ? partes[1].trim() : "Hola";
-                    const numero = localStorage.getItem('contacto_' + nombre);
-                    if(numero) {
-                        accionPendiente = () => { window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank'); };
-                        esperandoConfirmacion = true;
-                        speak("¿Confirma el envío a " + nombre + "?");
-                    } else { speak("No encuentro el contacto de " + nombre + "."); }
-                } 
-                else if (cmd.includes("número de") && cmd.includes("es")) {
-                    const p = cmd.split("número de")[1].split("es");
-                    localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
-                    speak("Contacto " + p[0].trim() + " guardado con éxito.");
-                } 
-                else if (cmd.includes("dual robotics") || cmd.includes("dedicas") || cmd.includes("quién eres")) {
-                    speak("Dual Robotics Industries es su empresa de desarrollo tecnológico. Yo soy su interfaz Jarvis, encargado del control de sistemas.");
-                }
-                else if (cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta") || cmd.includes("estás ahí")) {
-                    speak("Sistemas operativos al cien por ciento. A su servicio, señor.");
-                } 
-                else {
-                    speak("Instrucción recibida, señor. Estoy a la espera de más datos.");
+                if (cmd.includes("voltaje") && cmd.includes("298")) {
+                    speak("El voltaje máximo del L298N es de 35 voltios, señor.");
+                } else if (cmd.includes("quién eres") || cmd.includes("dual robotics")) {
+                    speak("Soy JARVIS, la interfaz de Dual Robotics Industries.");
+                } else if (cmd.includes("hola") || cmd.includes("jarvis")) {
+                    speak("A su servicio, señor.");
+                } else {
+                    speak("Comando no reconocido en la base de datos.");
                 }
             };
-
-            function simulateLearning(topic) {
-                learnZone.style.display = 'block';
-                let p = 0;
-                const int = setInterval(() => {
-                    p += 5; bar.style.width = p + "%";
-                    if(p >= 100) {
-                        clearInterval(int);
-                        speak("Procesamiento de datos sobre " + topic + " finalizado.");
-                        setTimeout(() => { learnZone.style.display = 'none'; }, 3000);
-                    }
-                }, 100);
-            }
-
-            document.body.onclick = () => {
-                startListening();
-                consoleLog.innerText = "SISTEMA ACTIVO";
-            };
+            
+            speak("Sistemas en línea. Escuchando, señor.");
         }
     </script>
 </body>
