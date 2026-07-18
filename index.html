@@ -2,70 +2,258 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JARVIS OS - Dual Robotics Industries</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;600&display=swap" rel="stylesheet">
     <style>
-        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
-        body { background: var(--bg); color: var(--glow); font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-transform: uppercase; }
-        .branding { margin-bottom: 20px; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); }
-        .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 20px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
-        .core { width: 60px; height: 60px; background: white; border-radius: 50%; box-shadow: 0 0 30px white, 0 0 50px var(--glow); }
-        .listening { border-color: var(--danger); box-shadow: 0 0 40px var(--danger); transform: scale(1.05); }
-        #console { margin-top: 30px; font-size: 0.9rem; text-align: center; height: 50px; width: 80%; border-top: 1px solid #111; padding-top: 10px; }
+        :root {
+            --glow: #00d4ff;
+            --danger: #ff3c00;
+            --bg: #000b0d;
+            --glass: rgba(0, 212, 255, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            background-image: 
+                radial-gradient(circle at 50% 50%, #00222a 0%, transparent 70%),
+                linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: var(--glow);
+            font-family: 'Exo 2', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            overflow: hidden;
+            padding: 40px 20px;
+        }
+
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            letter-spacing: 8px;
+            text-shadow: 0 0 15px var(--glow);
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            opacity: 0.8;
+            color: white;
+        }
+
+        /* REACTOR ARC EVOLUCIONADO */
+        .container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 300px;
+            height: 300px;
+        }
+
+        .reactor {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #001a20 40%, #000);
+            border: 2px solid var(--glow);
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.3), inset 0 0 30px rgba(0, 212, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 2;
+        }
+
+        .reactor::before {
+            content: '';
+            position: absolute;
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            border: 1px dashed var(--glow);
+            animation: rotate 10s linear infinite;
+        }
+
+        .core {
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 20px #fff,
+                0 0 40px var(--glow),
+                0 0 60px var(--glow);
+            position: relative;
+            z-index: 3;
+        }
+
+        /* ANIMACIÓN DE ESCUCHA */
+        .listening .reactor {
+            border-color: var(--danger);
+            box-shadow: 0 0 60px var(--danger);
+            transform: scale(1.1);
+        }
+        
+        .listening .core {
+            background: #ffecde;
+            box-shadow: 0 0 20px #fff, 0 0 40px var(--danger), 0 0 60px var(--danger);
+        }
+
+        /* CONSOLA HUD */
+        .hud-console {
+            width: 100%;
+            max-width: 500px;
+            background: var(--glass);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            backdrop-filter: blur(10px);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 500px;
+            font-size: 0.6rem;
+            margin-top: 10px;
+            opacity: 0.6;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .pulse {
+            position: absolute;
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            border: 2px solid var(--glow);
+            animation: pulse-ring 2s ease-out infinite;
+            opacity: 0;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(1); opacity: 0.5; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
     </style>
 </head>
-<body onclick="initJarvis()">
-    <div class="branding">DUAL ROBOTICS INDUSTRIES</div>
-    <div class="reactor" id="ring"><div class="core"></div></div>
-    <div id="console">HAGA CLIC EN EL REACTOR PARA INICIAR</div>
+<body onclick="startJarvis()">
+
+    <div class="header">
+        <h1>DUAL ROBOTICS</h1>
+        <p>INTELLIGENT SYSTEMS DIVISION</p>
+    </div>
+
+    <div class="container" id="mainContainer">
+        <div class="pulse"></div>
+        <div class="reactor" id="reactor">
+            <div class="core"></div>
+        </div>
+    </div>
+
+    <div class="hud-console" id="console">
+        INICIALIZAR PROTOCOLO STARK [TOQUE REACTOR]
+    </div>
+
+    <div class="status-bar">
+        <span>ENCRYPTED: AES-256</span>
+        <span id="power-level">PWR: 100%</span>
+        <span>MAINFRAME: CONNECTED</span>
+    </div>
 
     <script>
-        const ring = document.getElementById('ring');
         const consoleLog = document.getElementById('console');
+        const reactor = document.getElementById('mainContainer');
         const synth = window.speechSynthesis;
-        const SpeechRecognition = window.Recognition || window.webkitSpeechRecognition;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
-        let isStarted = false;
+        let isOnline = false;
 
         function speak(text) {
             if (recognition) recognition.stop();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'es-ES';
-            u.onend = () => { if(isStarted) recognition.start(); };
-            synth.speak(u);
-            consoleLog.innerText = "JARVIS: " + text;
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'es-ES';
+            utterance.pitch = 0.9;
+            utterance.rate = 1.0;
+            
+            utterance.onend = () => {
+                if (isOnline) recognition.start();
+            };
+            
+            synth.speak(utterance);
+            consoleLog.innerHTML = `<span style="color:white">JARVIS:</span> ${text}`;
         }
 
-        function initJarvis() {
-            if (isStarted) return;
-            isStarted = true;
+        function startJarvis() {
+            if (isOnline) return;
+            isOnline = true;
+            
             recognition = new SpeechRecognition();
-            recognition.lang = 'es-ES';
-            recognition.continuous = false; // Forzamos reinicio tras hablar para evitar sorderas
+            recognition.lang = 'es-CO';
+            recognition.continuous = false;
 
-            recognition.onstart = () => ring.classList.add('listening');
-            recognition.onend = () => ring.classList.remove('listening');
-
-            recognition.onresult = (e) => {
-                const cmd = e.results[0][0].transcript.toLowerCase();
-                consoleLog.innerText = "USTED: " + cmd;
-
-                if (cmd.includes("voltaje") || cmd.includes("298")) {
-                    speak("El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios, señor.");
-                } else if (cmd.includes("hola") || cmd.includes("buenos días") || cmd.includes("jarvis")) {
-                    speak("A su servicio, señor. Sistemas de Dual Robotics operativos.");
-                } else if (cmd.includes("quién eres")) {
-                    speak("Soy su asistente virtual Jarvis, diseñado para la gestión de Dual Robotics Industries.");
-                } else if (cmd.includes("busca") || cmd.includes("internet")) {
-                    speak("Entendido. Abriendo protocolos de búsqueda externa.");
-                    const query = cmd.replace("busca", "").replace("en internet", "").trim();
-                    setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
-                } else {
-                    speak("No tengo ese dato en memoria local, señor. ¿Desea que lo busque en internet?");
-                }
+            recognition.onstart = () => {
+                reactor.classList.add('listening');
+                consoleLog.innerText = "ESCUCHANDO...";
             };
 
-            speak("Sistemas cargados. ¿En qué puedo ayudarle hoy?");
+            recognition.onend = () => {
+                reactor.classList.remove('listening');
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                consoleLog.innerHTML = `<span style="color:var(--glow)">USER:</span> ${transcript}`;
+
+                // LÓGICA DE IA PROACTIVA
+                processCommand(transcript);
+            };
+
+            speak("Sistemas en línea, señor. Bienvenido a Dual Robotics Industries. Estoy listo para procesar sus peticiones.");
+        }
+
+        function processCommand(cmd) {
+            // Respuestas Locales (Acceso Rápido)
+            if (cmd.includes("voltaje") && (cmd.includes("298") || cmd.includes("puente h"))) {
+                speak("El voltaje máximo de alimentación para el módulo L298N es de 35 voltios, señor. Recomiendo no exceder los 30 para mayor estabilidad.");
+            } else if (cmd.includes("hola") || cmd.includes("jarvis")) {
+                speak("Hola, señor. Espero que sus proyectos de hoy sean exitosos.");
+            } else if (cmd.includes("quién eres")) {
+                speak("Soy Jarvis, la inteligencia artificial de Dual Robotics. Mi propósito es asistirle en su laboratorio.");
+            } else if (cmd.includes("busca") || cmd.includes("internet")) {
+                const query = cmd.replace("busca", "").replace("en internet", "").trim();
+                speak(`Entendido, señor. Iniciando búsqueda externa sobre ${query}.`);
+                setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
+            } else {
+                // FALLBACK DE IA CONECTADA
+                speak("Esa instrucción no está en mi base de datos local. Consultando al mainframe central de Zapia para una respuesta procesada.");
+            }
         }
     </script>
 </body>
