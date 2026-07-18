@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>JARVIS OS - Dual Robotics</title>
+    <style>
+        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
+        body {
+            background: var(--bg); color: var(--glow); 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0; height: 100vh; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; overflow: hidden;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .ui-frame { position: absolute; border: 1px solid rgba(0, 212, 255, 0.1); width: 92%; height: 92%; pointer-events: none; }
+        .reactor-container { position: relative; width: 220px; height: 220px; cursor: pointer; z-index: 10; }
+        .ring {
+            width: 100%; height: 100%; border-radius: 50%; border: 4px double var(--glow);
+            box-shadow: 0 0 20px var(--glow), inset 0 0 15px var(--glow);
+            display: flex; align-items: center; justify-content: center; transition: 0.5s;
+        }
+        .core { width: 70px; height: 70px; background: radial-gradient(circle, #fff, var(--glow)); border-radius: 50%; box-shadow: 0 0 40px #fff; }
+        .listening .ring { border-color: var(--danger); box-shadow: 0 0 40px var(--danger); animation: pulse 1s infinite; }
+        .listening .core { background: radial-gradient(circle, #fff, var(--danger)); box-shadow: 0 0 40px var(--danger); }
+        #learning-zone { width: 80%; margin-top: 30px; display: none; }
+        .progress-bg { background: rgba(0,212,255,0.1); border: 1px solid var(--glow); height: 8px; border-radius: 4px; overflow: hidden; }
+        .progress-fill { background: var(--glow); width: 0%; height: 100%; transition: 0.1s; box-shadow: 0 0 10px var(--glow); }
+        #console { font-size: 0.7rem; margin-top: 20px; height: 40px; text-align: center; color: #fff; opacity: 0.8; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+    </style>
+</head>
+<body>
+    <div class="ui-frame"></div>
+    <div id="console">SISTEMA JARVIS ONLINE // ESPERANDO ÓRDENES</div>
+    <div class="reactor-container" id="jarvis-btn">
+        <div class="ring" id="ring-element"><div class="core"></div></div>
+    </div>
+    <div id="learning-zone">
+        <div style="font-size: 0.5rem; margin-bottom: 5px;">PROCESANDO DATOS NEURALES...</div>
+        <div class="progress-bg"><div class="progress-fill" id="bar"></div></div>
+    </div>
+    <script>
+        const btn = document.getElementById('jarvis-btn');
+        const ring = document.getElementById('ring-element');
+        const consoleLog = document.getElementById('console');
+        const bar = document.getElementById('bar');
+        const learnZone = document.getElementById('learning-zone');
+        const synth = window.speechSynthesis;
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let esperandoConfirmacion = false;
+        let accionPendiente = null;
+        function speak(text) {
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'es-ES'; u.rate = 1.0; u.pitch = 0.8;
+            synth.speak(u);
+        }
+        if (!SpeechRecognition) {
+            consoleLog.innerText = "ERROR: RECONOCIMIENTO NO SOPORTADO";
+        } else {
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'es-CO';
+            function simulateLearning(topic) {
+                learnZone.style.display = 'block';
+                let p = 0;
+                const int = setInterval(() => {
+                    p += 2; bar.style.width = p + "%";
+                    consoleLog.innerText = `APRENDIENDO: ${topic.toUpperCase()} [${p}%]`;
+                    if(p >= 100) {
+                        clearInterval(int);
+                        speak("Análisis completado, señor.");
+                        localStorage.setItem('memoria_' + topic, "Datos registrados.");
+                        setTimeout(() => { learnZone.style.display = 'none'; consoleLog.innerText = "SISTEMA EN ESPERA"; }, 3000);
+                    }
+                }, 100);
+            }
+            btn.onclick = () => { recognition.start(); };
+            recognition.onstart = () => { ring.classList.add('listening'); consoleLog.innerText = "ESCUCHANDO..."; };
+            recognition.onend = () => ring.classList.remove('listening');
+            recognition.onresult = (e) => {
+                const cmd = e.results[0][0].transcript.toLowerCase();
+                consoleLog.innerText = ">> " + cmd;
+                if (esperandoConfirmacion) {
+                    if (cmd.includes("sí") || cmd.includes("hazlo")) {
+                        speak("Autorización recibida.");
+                        if(accionPendiente) accionPendiente();
+                    } else { speak("Cancelado."); }
+                    esperandoConfirmacion = false; accionPendiente = null;
+                    return;
+                }
+                if(cmd.includes("aprende")) {
+                    simulateLearning(cmd.replace("aprende", "").trim());
+                } else if(cmd.includes("llama a")) {
+                    const n = cmd.replace("llama a", "").trim();
+                    const num = localStorage.getItem('contacto_' + n);
+                    if(num) {
+                        accionPendiente = () => { window.location.href = "tel:" + num; };
+                        esperandoConfirmacion = true; speak("¿Confirma la llamada?");
+                    } else { speak("Contacto no encontrado."); }
+                } else if(cmd.includes("número de") && cmd.includes("es")) {
+                    const p = cmd.split("número de")[1].split("es");
+                    localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
+                    speak("Guardado.");
+                } else { speak("Entendido."); }
+            };
+        }
+    </script>
+</body>
+</html>
