@@ -6,254 +6,157 @@
     <title>JARVIS OS - Dual Robotics Industries</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Exo+2:wght@300;600&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --glow: #00d4ff;
-            --danger: #ff3c00;
-            --bg: #000b0d;
-            --glass: rgba(0, 212, 255, 0.1);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: var(--bg);
-            background-image: 
-                radial-gradient(circle at 50% 50%, #00222a 0%, transparent 70%),
-                linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
-            background-size: 100% 100%, 30px 30px, 30px 30px;
-            color: var(--glow);
-            font-family: 'Exo 2', sans-serif;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: space-between;
-            overflow: hidden;
-            padding: 40px 20px;
-        }
-
-        .header {
-            text-align: center;
-            width: 100%;
-        }
-
-        .header h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.5rem;
-            letter-spacing: 8px;
-            text-shadow: 0 0 15px var(--glow);
-            margin-bottom: 5px;
-        }
-
-        .header p {
-            font-size: 0.7rem;
-            letter-spacing: 3px;
-            opacity: 0.8;
-            color: white;
-        }
-
-        /* REACTOR ARC EVOLUCIONADO */
-        .container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 300px;
-            height: 300px;
-        }
-
-        .reactor {
-            position: relative;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #001a20 40%, #000);
-            border: 2px solid var(--glow);
-            box-shadow: 0 0 50px rgba(0, 212, 255, 0.3), inset 0 0 30px rgba(0, 212, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 2;
-        }
-
-        .reactor::before {
-            content: '';
-            position: absolute;
-            width: 240px;
-            height: 240px;
-            border-radius: 50%;
-            border: 1px dashed var(--glow);
-            animation: rotate 10s linear infinite;
-        }
-
-        .core {
-            width: 80px;
-            height: 80px;
-            background: #fff;
-            border-radius: 50%;
-            box-shadow: 
-                0 0 20px #fff,
-                0 0 40px var(--glow),
-                0 0 60px var(--glow);
-            position: relative;
-            z-index: 3;
-        }
-
-        /* ANIMACIÓN DE ESCUCHA */
-        .listening .reactor {
-            border-color: var(--danger);
-            box-shadow: 0 0 60px var(--danger);
-            transform: scale(1.1);
-        }
-        
-        .listening .core {
-            background: #ffecde;
-            box-shadow: 0 0 20px #fff, 0 0 40px var(--danger), 0 0 60px var(--danger);
-        }
-
-        /* CONSOLA HUD */
-        .hud-console {
-            width: 100%;
-            max-width: 500px;
-            background: var(--glass);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 10px;
-            padding: 15px;
-            backdrop-filter: blur(10px);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            text-align: center;
-            min-height: 80px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 500px;
-            font-size: 0.6rem;
-            margin-top: 10px;
-            opacity: 0.6;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .pulse {
-            position: absolute;
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            border: 2px solid var(--glow);
-            animation: pulse-ring 2s ease-out infinite;
-            opacity: 0;
-        }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.5; }
-            100% { transform: scale(1.5); opacity: 0; }
-        }
+        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; --glass: rgba(0, 212, 255, 0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Exo 2', sans-serif; cursor: none; }
+        body { background: var(--bg); color: var(--glow); height: 100vh; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .bg-grid { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px); background-size: 50px 50px; z-index: -1; animation: grid-move 20s linear infinite; }
+        @keyframes grid-move { from { background-position: 0 0; } to { background-position: 50px 50px; } }
+        .hud-frame { position: absolute; width: 95%; height: 95%; border: 1px solid rgba(0, 212, 255, 0.2); pointer-events: none; }
+        .branding { font-family: 'Orbitron', sans-serif; letter-spacing: 5px; margin-bottom: 40px; text-shadow: 0 0 15px var(--glow); text-align: center; }
+        .reactor-container { position: relative; width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; }
+        .reactor-outer { position: absolute; width: 100%; height: 100%; border: 2px dashed var(--glow); border-radius: 50%; animation: spin 10s linear infinite; opacity: 0.3; }
+        .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 30px var(--glow), inset 0 0 30px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative; z-index: 10; }
+        .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 40px #fff, 0 0 60px var(--glow); transition: 0.3s; }
+        .listening { border-color: var(--danger); box-shadow: 0 0 50px var(--danger), inset 0 0 30px var(--danger); transform: scale(1.05); }
+        .listening .core { box-shadow: 0 0 40px #fff, 0 0 60px var(--danger); }
+        .status-bar { position: absolute; bottom: 40px; width: 80%; display: flex; justify-content: space-between; font-size: 0.7rem; border-top: 1px solid rgba(0, 212, 255, 0.2); padding-top: 15px; }
+        #console { font-family: 'Orbitron', sans-serif; color: #fff; font-size: 0.8rem; text-align: center; max-width: 80%; line-height: 1.5; text-shadow: 0 0 5px var(--glow); margin-top: 20px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        #cursor { width: 20px; height: 20px; border: 1px solid var(--glow); position: fixed; pointer-events: none; border-radius: 50%; transform: translate(-50%, -50%); z-index: 999; }
     </style>
 </head>
-<body onclick="startJarvis()">
+<body onclick="initJarvis()">
+    <div class="bg-grid"></div>
+    <div class="hud-frame"></div>
+    <div id="cursor"></div>
 
-    <div class="header">
-        <h1>DUAL ROBOTICS</h1>
-        <p>INTELLIGENT SYSTEMS DIVISION</p>
+    <div class="branding">
+        <h2 id="top-text">JARVIS OS</h2>
+        <p style="font-size: 0.6rem; opacity: 0.7;">DUAL ROBOTICS INDUSTRIES</p>
     </div>
 
-    <div class="container" id="mainContainer">
-        <div class="pulse"></div>
-        <div class="reactor" id="reactor">
+    <div class="reactor-container">
+        <div class="reactor-outer"></div>
+        <div class="reactor" id="ring">
             <div class="core"></div>
         </div>
     </div>
 
-    <div class="hud-console" id="console">
-        INICIALIZAR PROTOCOLO STARK [TOQUE REACTOR]
-    </div>
+    <div id="console">HAGA CLIC PARA ACTIVAR INTERFAZ NEURAL</div>
 
     <div class="status-bar">
-        <span>ENCRYPTED: AES-256</span>
-        <span id="power-level">PWR: 100%</span>
-        <span>MAINFRAME: CONNECTED</span>
+        <span>ENLACE: ESTABLE</span>
+        <span id="mainframe-status">MAINFRAME: CONECTADO</span>
+        <span>SECURE: AES-256</span>
     </div>
 
     <script>
+        const ring = document.getElementById('ring');
         const consoleLog = document.getElementById('console');
-        const reactor = document.getElementById('mainContainer');
+        const mainframeStatus = document.getElementById('mainframe-status');
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
-        let isOnline = false;
+        let isStarted = false;
+        
+        // Memoria de aprendizaje local (Se expandirá dinámicamente)
+        const localMemory = {
+            "quién eres": "Soy Jarvis, la interfaz de inteligencia artificial de Dual Robotics Industries.",
+            "dual robotics": "Dual Robotics Industries es su corporación tecnológica señor. Estamos liderando el futuro de la robótica.",
+            "voltaje": "El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios, según su ficha técnica.",
+            "l298n": "El módulo L 298 N es un controlador de motores de doble puente H. Soporta hasta 35 voltios y 2 amperios por canal.",
+            "hola": "A su servicio, señor. ¿Qué protocolos iniciamos hoy?",
+            "buenos días": "Buenos días, señor. Todos los sistemas operativos."
+        };
+
+        const cursor = document.getElementById('cursor');
+        document.addEventListener('mousemove', e => {
+            cursor.style.left = e.clientX + 'px';
+            cursor.style.top = e.clientY + 'px';
+        });
 
         function speak(text) {
             if (recognition) recognition.stop();
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'es-ES';
-            utterance.pitch = 0.9;
-            utterance.rate = 1.0;
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'es-ES';
+            u.pitch = 0.9;
+            u.rate = 1;
             
-            utterance.onend = () => {
-                if (isOnline) recognition.start();
+            u.onstart = () => {
+                mainframeStatus.innerText = "MAINFRAME: TRANSMITIENDO";
+                mainframeStatus.style.color = "#fff";
             };
             
-            synth.speak(utterance);
-            consoleLog.innerHTML = `<span style="color:white">JARVIS:</span> ${text}`;
+            u.onend = () => {
+                mainframeStatus.innerText = "MAINFRAME: CONECTADO";
+                mainframeStatus.style.color = "var(--glow)";
+                if(isStarted) startListening(); 
+            };
+            
+            synth.speak(u);
+            consoleLog.innerText = "JARVIS: " + text;
         }
 
-        function startJarvis() {
-            if (isOnline) return;
-            isOnline = true;
-            
+        function startListening() {
+            try {
+                recognition.start();
+            } catch(e) {
+                console.log("Re-start preventivo");
+            }
+        }
+
+        function initJarvis() {
+            if (isStarted) return;
+            isStarted = true;
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
             recognition.continuous = false;
+            recognition.interimResults = false;
 
             recognition.onstart = () => {
-                reactor.classList.add('listening');
+                ring.classList.add('listening');
                 consoleLog.innerText = "ESCUCHANDO...";
             };
 
             recognition.onend = () => {
-                reactor.classList.remove('listening');
+                ring.classList.remove('listening');
             };
 
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript.toLowerCase();
-                consoleLog.innerHTML = `<span style="color:var(--glow)">USER:</span> ${transcript}`;
-
-                // LÓGICA DE IA PROACTIVA
-                processCommand(transcript);
+            recognition.onerror = (e) => {
+                if (isStarted && e.error !== 'no-speech') {
+                    setTimeout(startListening, 500);
+                }
             };
 
-            speak("Sistemas en línea, señor. Bienvenido a Dual Robotics Industries. Estoy listo para procesar sus peticiones.");
-        }
+            recognition.onresult = (e) => {
+                const cmd = e.results[0][0].transcript.toLowerCase();
+                consoleLog.innerText = "USTED: " + cmd;
 
-        function processCommand(cmd) {
-            // Respuestas Locales (Acceso Rápido)
-            if (cmd.includes("voltaje") && (cmd.includes("298") || cmd.includes("puente h"))) {
-                speak("El voltaje máximo de alimentación para el módulo L298N es de 35 voltios, señor. Recomiendo no exceder los 30 para mayor estabilidad.");
-            } else if (cmd.includes("hola") || cmd.includes("jarvis")) {
-                speak("Hola, señor. Espero que sus proyectos de hoy sean exitosos.");
-            } else if (cmd.includes("quién eres")) {
-                speak("Soy Jarvis, la inteligencia artificial de Dual Robotics. Mi propósito es asistirle en su laboratorio.");
-            } else if (cmd.includes("busca") || cmd.includes("internet")) {
-                const query = cmd.replace("busca", "").replace("en internet", "").trim();
-                speak(`Entendido, señor. Iniciando búsqueda externa sobre ${query}.`);
-                setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
-            } else {
-                // FALLBACK DE IA CONECTADA
-                speak("Esa instrucción no está en mi base de datos local. Consultando al mainframe central de Zapia para una respuesta procesada.");
-            }
+                let found = false;
+                for (let key in localMemory) {
+                    if (cmd.includes(key)) {
+                        speak(localMemory[key]);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    if (cmd.includes("busca") || cmd.includes("internet")) {
+                        const query = cmd.replace("busca", "").replace("en internet", "").trim();
+                        speak(`Entendido, señor. Iniciando protocolos de búsqueda sobre ${query}.`);
+                        setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
+                    } else {
+                        // AQUÍ ES DONDE ÉL ME PREGUNTA A MÍ
+                        speak("No tengo ese dato en memoria local. Consultando al mainframe central.");
+                        // Enviamos señal visual de "Pensando"
+                        mainframeStatus.innerText = "MAINFRAME: PROCESANDO PETICIÓN...";
+                        mainframeStatus.style.color = "#ffcc00";
+                    }
+                }
+            };
+
+            speak("Sistemas cargados. Interfaz neural Dual Robotics activa.");
         }
     </script>
 </body>
