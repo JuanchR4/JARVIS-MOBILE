@@ -2,73 +2,70 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>JARVIS DEBUG - DUAL ROBOTICS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JARVIS OS - Dual Robotics Industries</title>
     <style>
-        body { background: #000; color: #00d4ff; font-family: monospace; padding: 20px; text-transform: uppercase; }
-        #log { border: 1px solid #00d4ff; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; background: #001111; }
-        button { background: #00d4ff; color: #000; border: none; padding: 15px; cursor: pointer; font-weight: bold; width: 100%; }
-        .red { color: #ff3c00; }
+        :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
+        body { background: var(--bg); color: var(--glow); font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-transform: uppercase; }
+        .branding { margin-bottom: 20px; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); }
+        .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 20px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .core { width: 60px; height: 60px; background: white; border-radius: 50%; box-shadow: 0 0 30px white, 0 0 50px var(--glow); }
+        .listening { border-color: var(--danger); box-shadow: 0 0 40px var(--danger); transform: scale(1.05); }
+        #console { margin-top: 30px; font-size: 0.9rem; text-align: center; height: 50px; width: 80%; border-top: 1px solid #111; padding-top: 10px; }
     </style>
 </head>
-<body>
-    <h3>SISTEMA DE DIAGNÓSTICO JARVIS</h3>
-    <div id="log">SISTEMA INICIALIZADO... ESPERANDO ACCIÓN DEL USUARIO</div>
-    <button onclick="diagnose()">INICIAR DIAGNÓSTICO DE VOZ</button>
+<body onclick="initJarvis()">
+    <div class="branding">DUAL ROBOTICS INDUSTRIES</div>
+    <div class="reactor" id="ring"><div class="core"></div></div>
+    <div id="console">HAGA CLIC EN EL REACTOR PARA INICIAR</div>
 
     <script>
-        const log = document.getElementById('log');
-        const addLog = (msg, color='') => {
-            const div = document.createElement('div');
-            div.style.color = color;
-            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            log.appendChild(div);
-            log.scrollTop = log.scrollHeight;
-        };
+        const ring = document.getElementById('ring');
+        const consoleLog = document.getElementById('console');
+        const synth = window.speechSynthesis;
+        const SpeechRecognition = window.Recognition || window.webkitSpeechRecognition;
+        let recognition;
+        let isStarted = false;
 
-        function diagnose() {
-            addLog("PASO 1: PROBANDO SALIDA DE VOZ (SYNTHESIZER)");
-            const synth = window.speechSynthesis;
-            const u = new SpeechSynthesisUtterance("Prueba de audio del sistema Jarvis. Si escucha esto, el altavoz funciona.");
+        function speak(text) {
+            if (recognition) recognition.stop();
+            const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-ES';
-            u.onstart = () => addLog("AUDIO: HABLANDO...");
-            u.onerror = (e) => addLog("ERROR EN AUDIO: " + e.error, "#ff3c00");
-            u.onend = () => {
-                addLog("AUDIO: PRUEBA COMPLETADA.");
-                startMicTest();
-            };
+            u.onend = () => { if(isStarted) recognition.start(); };
             synth.speak(u);
+            consoleLog.innerText = "JARVIS: " + text;
         }
 
-        function startMicTest() {
-            addLog("PASO 2: PROBANDO MICRÓFONO (RECOGNITION)");
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            
-            if (!SpeechRecognition) {
-                addLog("ERROR: NAVEGADOR NO SOPORTA VOZ", "#ff3c00");
-                return;
-            }
+        function initJarvis() {
+            if (isStarted) return;
+            isStarted = true;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.continuous = false; // Forzamos reinicio tras hablar para evitar sorderas
 
-            const rec = new SpeechRecognition();
-            rec.lang = 'es-ES';
-            
-            rec.onstart = () => addLog("MIC: ESCUCHANDO... HABLE AHORA");
-            rec.onerror = (e) => addLog("ERROR MIC: " + e.error, "#ff3c00");
-            
-            rec.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                addLog("MIC: RECIBIDO -> " + text);
-                
-                if (text.toLowerCase().includes("voltaje") || text.toLowerCase().includes("298")) {
-                    addLog("LÓGICA: COMANDO L298 DETECTADO", "#00ff00");
-                    const ans = new SpeechSynthesisUtterance("El voltaje del L298 es 35 voltios.");
-                    ans.lang = 'es-ES';
-                    window.speechSynthesis.speak(ans);
+            recognition.onstart = () => ring.classList.add('listening');
+            recognition.onend = () => ring.classList.remove('listening');
+
+            recognition.onresult = (e) => {
+                const cmd = e.results[0][0].transcript.toLowerCase();
+                consoleLog.innerText = "USTED: " + cmd;
+
+                if (cmd.includes("voltaje") || cmd.includes("298")) {
+                    speak("El voltaje máximo de alimentación para el módulo L 298 N es de 35 voltios, señor.");
+                } else if (cmd.includes("hola") || cmd.includes("buenos días") || cmd.includes("jarvis")) {
+                    speak("A su servicio, señor. Sistemas de Dual Robotics operativos.");
+                } else if (cmd.includes("quién eres")) {
+                    speak("Soy su asistente virtual Jarvis, diseñado para la gestión de Dual Robotics Industries.");
+                } else if (cmd.includes("busca") || cmd.includes("internet")) {
+                    speak("Entendido. Abriendo protocolos de búsqueda externa.");
+                    const query = cmd.replace("busca", "").replace("en internet", "").trim();
+                    setTimeout(() => { window.open(`https://www.google.com/search?q=${query}`, '_blank'); }, 1500);
                 } else {
-                    addLog("LÓGICA: COMANDO NO MAPEADO", "#ffcc00");
+                    speak("No tengo ese dato en memoria local, señor. ¿Desea que lo busque en internet?");
                 }
             };
 
-            rec.start();
+            speak("Sistemas cargados. ¿En qué puedo ayudarle hoy?");
         }
     </script>
 </body>
