@@ -61,7 +61,6 @@
 
         function speak(text) {
             isSpeaking = true;
-            // Detener reconocimiento antes de hablar
             if (recognition) {
                 try { recognition.abort(); } catch(e) {}
             }
@@ -71,10 +70,7 @@
             
             u.onend = () => {
                 isSpeaking = false;
-                // Pequeño delay para evitar ecos y reiniciar escucha
-                setTimeout(() => {
-                    if (!isSpeaking) startListening();
-                }, 500);
+                setTimeout(() => { if (!isSpeaking) startListening(); }, 500);
             };
             
             synth.speak(u);
@@ -85,9 +81,7 @@
             if (isSpeaking) return;
             try {
                 recognition.start();
-            } catch(e) {
-                // Si ya está iniciado, no pasa nada
-            }
+            } catch(e) {}
         }
 
         if (!SpeechRecognition) {
@@ -104,17 +98,7 @@
 
             recognition.onend = () => {
                 ring.classList.remove('listening');
-                // Reiniciar automáticamente siempre que no estemos hablando
-                if (!isSpeaking) {
-                    setTimeout(startListening, 300);
-                }
-            };
-
-            recognition.onerror = (event) => {
-                consoleLog.innerText = "REINICIANDO SENSORES...";
-                if (event.error !== 'no-speech') {
-                    console.log('Error de reconocimiento:', event.error);
-                }
+                if (!isSpeaking) setTimeout(startListening, 300);
             };
 
             recognition.onresult = (e) => {
@@ -133,43 +117,45 @@
                     return;
                 }
 
+                // LÓGICA DE COMANDOS REFORZADA
                 if (cmd.includes("aprende") || cmd.includes("aprendete")) {
-                    const topic = cmd.replace("aprendete", "").replace("aprende", "").trim();
-                    simulateLearning(topic || "Nuevos Datos");
+                    const topic = cmd.split("aprende")[1] || cmd.split("aprendete")[1] || "Nuevos Datos";
+                    simulateLearning(topic.trim());
                 } 
                 else if (cmd.includes("llama a")) {
-                    const nombre = cmd.replace("llama a", "").trim();
+                    const nombre = cmd.split("llama a")[1].trim();
                     const numero = localStorage.getItem('contacto_' + nombre);
                     if(numero) {
                         accionPendiente = () => { window.location.href = `tel:${numero}`; };
                         esperandoConfirmacion = true;
-                        speak(`Señor, ¿desea que inicie la llamada con ${nombre}?`);
-                    } else { speak(`No tengo el número de ${nombre}.`); }
+                        speak("Señor, ¿desea que inicie la llamada con " + nombre + "?");
+                    } else { speak("No tengo el número de " + nombre + " en mis archivos."); }
                 } 
-                else if (cmd.includes("whatsapp a")) {
+                else if (cmd.includes("whatsapp")) {
                     const partes = cmd.split("con el mensaje");
-                    const nombre = partes[0].replace("envía un whatsapp a", "").replace("mándale un whatsapp a", "").replace("whatsapp a", "").trim();
+                    const nombrePart = partes[0].includes("a") ? partes[0].split("a")[1] : partes[0];
+                    const nombre = nombrePart.replace("enviar", "").replace("mándale", "").replace("whatsapp", "").trim();
                     const mensaje = partes[1] ? partes[1].trim() : "Hola";
                     const numero = localStorage.getItem('contacto_' + nombre);
                     if(numero) {
                         accionPendiente = () => { window.open(`https://wa.me/${numero}?text=${encodeURIComponent(mensaje)}`, '_blank'); };
                         esperandoConfirmacion = true;
-                        speak(`¿Confirma el envío del mensaje a ${nombre}?`);
-                    } else { speak(`No tengo el contacto de ${nombre}.`); }
+                        speak("¿Confirma el envío a " + nombre + "?");
+                    } else { speak("No encuentro el contacto de " + nombre + "."); }
                 } 
                 else if (cmd.includes("número de") && cmd.includes("es")) {
                     const p = cmd.split("número de")[1].split("es");
                     localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
-                    speak("Contacto indexado.");
+                    speak("Contacto " + p[0].trim() + " guardado con éxito.");
                 } 
-                else if (cmd.includes("dual robotics") || cmd.includes("dedicas")) {
-                    speak("Dual Robotics Industries es una división líder en robótica avanzada. Actualmente trabajamos en prototipos inteligentes.");
+                else if (cmd.includes("dual robotics") || cmd.includes("dedicas") || cmd.includes("quién eres")) {
+                    speak("Dual Robotics Industries es su empresa de desarrollo tecnológico. Yo soy su interfaz Jarvis, encargado del control de sistemas.");
                 }
-                else if (cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta")) {
-                    speak("Sistemas en línea. A su servicio, señor.");
+                else if (cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta") || cmd.includes("estás ahí")) {
+                    speak("Sistemas operativos al cien por ciento. A su servicio, señor.");
                 } 
                 else {
-                    speak("Instrucción recibida. Procesando.");
+                    speak("No tengo una instrucción específica para eso, señor. ¿Podría ser más preciso?");
                 }
             };
 
@@ -177,11 +163,11 @@
                 learnZone.style.display = 'block';
                 let p = 0;
                 const int = setInterval(() => {
-                    p += 10; bar.style.width = p + "%";
+                    p += 5; bar.style.width = p + "%";
                     if(p >= 100) {
                         clearInterval(int);
-                        speak("Análisis de " + topic + " completado.");
-                        setTimeout(() => { learnZone.style.display = 'none'; }, 2000);
+                        speak("Procesamiento de datos sobre " + topic + " finalizado.");
+                        setTimeout(() => { learnZone.style.display = 'none'; }, 3000);
                     }
                 }, 100);
             }
