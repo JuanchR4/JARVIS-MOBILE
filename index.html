@@ -117,8 +117,14 @@
                     return;
                 }
 
-                // LÓGICA DE COMANDOS REFORZADA
-                if (cmd.includes("aprende") || cmd.includes("aprendete")) {
+                // LÓGICA DE DATOS ESPECÍFICOS (L298N)
+                if (cmd.includes("voltaje") && (cmd.includes("l298") || cmd.includes("l 298"))) {
+                    speak("Según la ficha técnica, el módulo L298N soporta un voltaje máximo de alimentación de hasta 35 voltios, aunque se recomienda operar hasta 12 o 24 voltios para mayor seguridad de los componentes.");
+                }
+                else if (cmd.includes("corriente") && (cmd.includes("l298") || cmd.includes("l 298"))) {
+                    speak("El controlador L298N puede manejar una corriente pico de hasta 2 amperios por canal.");
+                }
+                else if (cmd.includes("aprende") || cmd.includes("aprendete")) {
                     const topic = cmd.split("aprende")[1] || cmd.split("aprendete")[1] || "Nuevos Datos";
                     simulateLearning(topic.trim());
                 } 
@@ -155,7 +161,7 @@
                     speak("Sistemas operativos al cien por ciento. A su servicio, señor.");
                 } 
                 else {
-                    speak("No tengo una instrucción específica para eso, señor. ¿Podría ser más preciso?");
+                    speak("Instrucción recibida, señor. Estoy a la espera de más datos.");
                 }
             };
 
