@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>JARVIS OS - Dual Robotics</title>
+    <title>JARVIS OS - Escucha Continua</title>
     <style>
         :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
         body {
@@ -28,11 +28,12 @@
         .progress-fill { background: var(--glow); width: 0%; height: 100%; transition: 0.1s; box-shadow: 0 0 10px var(--glow); }
         #console { font-size: 0.7rem; margin-top: 20px; height: 40px; text-align: center; color: #fff; opacity: 0.8; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        .auto-mode { position: fixed; bottom: 20px; font-size: 0.6rem; color: var(--glow); border: 1px solid var(--glow); padding: 5px 10px; border-radius: 5px; }
     </style>
 </head>
 <body>
     <div class="ui-frame"></div>
-    <div id="console">SISTEMA JARVIS ONLINE // ESPERANDO ÓRDENES</div>
+    <div id="console">SISTEMA JARVIS ONLINE // ESCUCHA ACTIVA</div>
     <div class="reactor-container" id="jarvis-btn">
         <div class="ring" id="ring-element"><div class="core"></div></div>
     </div>
@@ -40,6 +41,8 @@
         <div style="font-size: 0.5rem; margin-bottom: 5px;">PROCESANDO DATOS NEURALES...</div>
         <div class="progress-bg"><div class="progress-fill" id="bar"></div></div>
     </div>
+    <div class="auto-mode">MODO MANOS LIBRES: ACTIVO</div>
+
     <script>
         const btn = document.getElementById('jarvis-btn');
         const ring = document.getElementById('ring-element');
@@ -48,13 +51,19 @@
         const learnZone = document.getElementById('learning-zone');
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
         let esperandoConfirmacion = false;
         let accionPendiente = null;
+        let isSpeaking = false;
 
         function speak(text) {
+            isSpeaking = true;
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-ES'; u.rate = 1.0; u.pitch = 0.8;
-            u.onend = () => { if (esperandoConfirmacion) { setTimeout(() => { recognition.start(); }, 500); } };
+            u.onend = () => { 
+                isSpeaking = false;
+                startListening(); // Reanudar escucha al terminar de hablar
+            };
             synth.speak(u);
         }
 
@@ -63,8 +72,33 @@
         } else {
             const recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
-            recognition.continuous = false;
+            recognition.continuous = false; // Manejamos la continuidad manualmente para evitar cortes
             recognition.interimResults = false;
+
+            function startListening() {
+                if (!isSpeaking) {
+                    try { recognition.start(); } catch(e) {}
+                }
+            }
+
+            // Iniciar escucha automática al cargar (requiere una primera interacción del usuario por seguridad del navegador)
+            window.onclick = () => { startListening(); };
+            btn.onclick = () => { startListening(); };
+
+            recognition.onstart = () => { 
+                ring.classList.add('listening'); 
+                consoleLog.innerText = "ESCUCHANDO..."; 
+            };
+
+            recognition.onend = () => { 
+                ring.classList.remove('listening');
+                // Auto-reinicio de la escucha si no está hablando
+                if (!isSpeaking) { setTimeout(startListening, 300); }
+            };
+
+            recognition.onerror = () => {
+                if (!isSpeaking) { setTimeout(startListening, 500); }
+            };
 
             function simulateLearning(topic) {
                 learnZone.style.display = 'block';
@@ -81,11 +115,6 @@
                 }, 100);
             }
 
-            btn.onclick = () => { if(!esperandoConfirmacion) recognition.start(); };
-
-            recognition.onstart = () => { ring.classList.add('listening'); consoleLog.innerText = "ESCUCHANDO..."; };
-            recognition.onend = () => { ring.classList.remove('listening'); };
-
             recognition.onresult = (e) => {
                 const cmd = e.results[0][0].transcript.toLowerCase();
                 consoleLog.innerText = ">> " + cmd;
@@ -95,7 +124,7 @@
                         speak("Autorización recibida.");
                         if(accionPendiente) accionPendiente();
                         esperandoConfirmacion = false; accionPendiente = null;
-                    } else {
+                    } else if (cmd.includes("no") || cmd.includes("cancela")) {
                         speak("Protocolo cancelado.");
                         esperandoConfirmacion = false; accionPendiente = null;
                     }
@@ -131,11 +160,8 @@
                     localStorage.setItem('contacto_' + p[0].trim(), p[1].trim().replace(/\s/g, ""));
                     speak("Contacto guardado.");
                 } 
-                else if(cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("estás ahí")) {
-                    speak("A su servicio, señor. Sistemas al cien por ciento.");
-                } 
-                else { 
-                    speak("Entendido, señor. ¿Hay algo más en lo que pueda ayudar?"); 
+                else if(cmd.includes("hola") || cmd.includes("jarvis") || cmd.includes("despierta")) {
+                    speak("A su servicio, señor. Modo manos libres activado.");
                 }
             };
         }
