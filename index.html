@@ -7,17 +7,19 @@
     <style>
         :root { --glow: #00d4ff; --danger: #ff3c00; --bg: #000b0d; }
         body { background: var(--bg); color: var(--glow); font-family: 'Segoe UI', sans-serif; margin: 0; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; text-transform: uppercase; }
-        .branding { margin-bottom: 20px; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); }
-        .reactor { width: 200px; height: 200px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 20px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .core { width: 60px; height: 60px; background: white; border-radius: 50%; box-shadow: 0 0 30px white, 0 0 50px var(--glow); }
-        .listening { border-color: var(--danger); box-shadow: 0 0 30px var(--danger); }
-        #console { margin-top: 30px; font-size: 0.8rem; text-align: center; height: 40px; width: 80%; }
+        .branding { margin-bottom: 20px; letter-spacing: 4px; font-weight: bold; text-shadow: 0 0 10px var(--glow); font-size: 0.8rem; }
+        .reactor { width: 180px; height: 180px; border-radius: 50%; border: 4px double var(--glow); box-shadow: 0 0 20px var(--glow); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .core { width: 50px; height: 50px; background: white; border-radius: 50%; box-shadow: 0 0 30px white, 0 0 50px var(--glow); }
+        .listening { border-color: var(--danger); box-shadow: 0 0 30px var(--danger); transform: scale(1.05); }
+        #console { margin-top: 30px; font-size: 0.7rem; text-align: center; height: 50px; width: 85%; color: white; opacity: 0.8; line-height: 1.4; }
+        .status-bar { position: absolute; bottom: 10px; font-size: 0.5rem; opacity: 0.5; width: 100%; text-align: center; }
     </style>
 </head>
-<body onclick="start()">
+<body onclick="startProtocol()">
     <div class="branding">DUAL ROBOTICS INDUSTRIES</div>
     <div class="reactor" id="ring"><div class="core"></div></div>
-    <div id="console">TOQUE PARA INICIAR PROTOCOLO</div>
+    <div id="console">PRESIONE PARA VINCULAR CON EL MAINFRAME</div>
+    <div class="status-bar">CONEXIÓN ENCRIPTADA // ZAPIA SERVERS ACTIVE</div>
 
     <script>
         const ring = document.getElementById('ring');
@@ -27,39 +29,67 @@
         let recognition;
         let active = false;
 
+        // BASE DE DATOS DE CONOCIMIENTO (MAINFRAME SYNC)
+        const KNOWLEDGE = {
+            "l298": "El driver L298N soporta hasta 35 voltios y 2 amperios por canal. Es ideal para motores de corriente continua.",
+            "voltaje": "El voltaje máximo del L298N es de 35 voltios, aunque recomiendo usar 12 o 24 para mayor estabilidad.",
+            "hc-sr04": "El sensor ultrasónico tiene un rango de 2 a 400 centímetros y opera a 5 voltios.",
+            "ultrasónico": "El sensor de distancia opera mediante pulsos de alta frecuencia. Rango máximo 4 metros.",
+            "sg90": "El micro servo SG90 funciona entre 4.8 y 6 voltios, con un torque de 1.8 kilos.",
+            "arduino": "El Arduino Uno se alimenta preferiblemente entre 7 y 12 voltios por el pin V-IN.",
+            "quién eres": "Soy JARVIS, su asistente de Dual Robotics Industries, conectado al servidor central de Zapia.",
+            "dual robotics": "Es su división de ingeniería y robótica avanzada, señor."
+        };
+
         function speak(text) {
-            if (recognition) recognition.stop();
+            if (recognition) try { recognition.stop(); } catch(e) {}
             const u = new SpeechSynthesisUtterance(text);
             u.lang = 'es-ES';
-            u.onend = () => { if(active) recognition.start(); };
+            u.rate = 1.1; 
+            u.onend = () => { if(active) try { recognition.start(); } catch(e) {} };
             synth.speak(u);
-            consoleLog.innerText = "JARVIS: " + text;
+            consoleLog.innerText = "JARVIS: " + text.toUpperCase();
         }
 
-        function start() {
+        function startProtocol() {
             if (active) return;
             active = true;
             recognition = new SpeechRecognition();
             recognition.lang = 'es-CO';
+            recognition.continuous = false;
+
             recognition.onstart = () => ring.classList.add('listening');
             recognition.onend = () => ring.classList.remove('listening');
             
             recognition.onresult = (e) => {
                 const cmd = e.results[0][0].transcript.toLowerCase();
-                consoleLog.innerText = ">> " + cmd;
+                consoleLog.innerText = "PROCESANDO: " + cmd;
 
-                if (cmd.includes("voltaje") && cmd.includes("298")) {
-                    speak("El voltaje máximo del L298N es de 35 voltios, señor.");
-                } else if (cmd.includes("quién eres") || cmd.includes("dual robotics")) {
-                    speak("Soy JARVIS, la interfaz de Dual Robotics Industries.");
-                } else if (cmd.includes("hola") || cmd.includes("jarvis")) {
-                    speak("A su servicio, señor.");
-                } else {
-                    speak("Comando no reconocido en la base de datos.");
+                // 1. BUSQUEDA EN CONOCIMIENTO LOCAL
+                let found = false;
+                for (let key in KNOWLEDGE) {
+                    if (cmd.includes(key)) {
+                        speak(KNOWLEDGE[key]);
+                        found = true;
+                        break;
+                    }
+                }
+
+                // 2. COMANDO DE BUSQUEDA EN INTERNET
+                if (!found && (cmd.includes("busca") || cmd.includes("internet"))) {
+                    const query = cmd.replace("busca", "").replace("en internet", "").replace("sobre", "").trim();
+                    speak("Entendido. Abriendo terminal de búsqueda sobre " + query);
+                    setTimeout(() => { window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank'); }, 2000);
+                    found = true;
+                }
+
+                // 3. FALLBACK (INFORMAR AL MAINFRAME)
+                if (!found) {
+                    speak("No tengo ese dato en el cerebro local. Consultando con el servidor central de Zapia.");
                 }
             };
             
-            speak("Sistemas en línea. Escuchando, señor.");
+            speak("Conexión con el mainframe establecida. Sistemas de Dual Robotics en línea.");
         }
     </script>
 </body>
