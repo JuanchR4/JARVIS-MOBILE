@@ -128,6 +128,72 @@
             localStorage.setItem("jarvisMemory", JSON.stringify(learnedMemory.slice(0, 100)));
         }
 
+        function generateCode(command) {
+            const q = normalize(command);
+            if (!/(codigo|código|programa|programa|sketch|script|crea|crear|dame)/.test(q)) return null;
+            if (q.includes("l293") || q.includes("motor") || q.includes("motores")) {
+                return { title: "Código Arduino para L293D y dos motores", code: `// Control básico de dos motores con L293D
+const int ENA = 5;
+const int IN1 = 7;
+const int IN2 = 8;
+const int ENB = 6;
+const int IN3 = 9;
+const int IN4 = 10;
+
+void setup() {
+  pinMode(ENA, OUTPUT); pinMode(IN1, OUTPUT); pinMode(IN2, OUTPUT);
+  pinMode(ENB, OUTPUT); pinMode(IN3, OUTPUT); pinMode(IN4, OUTPUT);
+}
+
+void motorA(int velocidad, bool adelante) {
+  analogWrite(ENA, velocidad);
+  digitalWrite(IN1, adelante); digitalWrite(IN2, !adelante);
+}
+
+void motorB(int velocidad, bool adelante) {
+  analogWrite(ENB, velocidad);
+  digitalWrite(IN3, adelante); digitalWrite(IN4, !adelante);
+}
+
+void loop() {
+  motorA(180, true); motorB(180, true);
+  delay(2000);
+  motorA(0, true); motorB(0, true);
+  delay(500);
+}` };
+            }
+            if (q.includes("pagina web") || q.includes("página web") || q.includes("html")) {
+                return { title: "Plantilla HTML de Dual Robotics", code: `<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dual Robotics</title></head>
+<body>
+  <h1>Dual Robotics Industries</h1>
+  <p>Soluciones de robótica para el futuro.</p>
+</body>
+</html>` };
+            }
+            return { title: "Plantilla JavaScript", code: `// Esqueleto generado por Jarvis
+function iniciarProyecto() {
+  console.log("Proyecto Dual Robotics iniciado");
+}
+
+iniciarProyecto();` };
+        }
+
+        function handleCodeRequest(command) {
+            const result = generateCode(command);
+            if (!result) return false;
+            const entry = result.title + "\n\n" + result.code;
+            addToHistory(entry);
+            consoleLog.innerText = "CÓDIGO GENERADO — REVISA EL HISTORIAL";
+            const short = "He generado " + result.title + ". Lo guardé completo en el historial para que puedas copiarlo.";
+            if (recognition) recognition.stop();
+            const u = new SpeechSynthesisUtterance(short); u.lang = "es-ES"; u.rate = 1;
+            u.onend = () => { if (isStarted) setTimeout(startListening, 350); };
+            synth.speak(u);
+            return true;
+        }
+
         async function searchInternet(question) {
             const query = encodeURIComponent(question.replace(/\bjarvis\b/gi, "").trim());
             const response = await fetch(`https://api.duckduckgo.com/?q=${query}&format=json&no_html=1&skip_disambig=1`, { signal: AbortSignal.timeout(8000) });
@@ -184,7 +250,7 @@
         }
         function addToHistory(text) {
             responseHistory.unshift(text);
-            responseHistory = responseHistory.slice(0, 30);
+            responseHistory = responseHistory.slice(0, 100);
             localStorage.setItem("jarvisResponseHistory", JSON.stringify(responseHistory));
             renderHistory();
         }
@@ -258,6 +324,7 @@
                 const cmd = e.results[0][0].transcript.toLowerCase();
                 consoleLog.innerText = "USTED: " + cmd;
 
+                if (handleCodeRequest(cmd)) return;
                 const answer = findLocalAnswer(cmd) || findLearnedAnswer(cmd);
                 if (answer) {
                     speak(answer);
