@@ -106,7 +106,7 @@
 
         function findLocalAnswer(command) {
             const clean = normalize(command);
-            for (const item of localMemory) {
+            for (const item of [...localMemory, ...remoteMemory]) {
                 if (item.keys.some(key => clean.includes(normalize(key)))) return item.text;
             }
             return null;
@@ -114,6 +114,19 @@
 
         // Memoria persistente: las respuestas aprendidas sobreviven al refresco.
         const learnedMemory = JSON.parse(localStorage.getItem("jarvisMemory") || "[]");
+        let remoteMemory = [];
+        async function loadKnowledgeBase() {
+            try {
+                const response = await fetch("knowledge.json", { cache: "no-store" });
+                if (!response.ok) return;
+                const data = await response.json();
+                remoteMemory = data.facts || [];
+                consoleLog.innerText = "BASE DE DATOS: " + remoteMemory.length + " FICHAS CARGADAS";
+            } catch (e) {
+                consoleLog.innerText = "MEMORIA LOCAL ACTIVA";
+            }
+        }
+        loadKnowledgeBase();
         function findLearnedAnswer(command) {
             const clean = normalize(command);
             const item = learnedMemory.find(x => clean.includes(normalize(x.key)));
@@ -131,6 +144,26 @@
         function generateCode(command) {
             const q = normalize(command);
             if (!/(codigo|código|programa|programa|sketch|script|crea|crear|dame)/.test(q)) return null;
+            if (q.includes("max mk42") || (q.includes("max") && (q.includes("robot") || q.includes("codigo") || q.includes("programa")))) {
+                return { title: "Código base seguro para Max MK42", code: `// Base de proyecto para Max MK42 - Dual Robotics
+// IMPORTANTE: sustituye los pines después de confirmar la electrónica real.
+const int MOTOR_IZQ_A = -1;
+const int MOTOR_IZQ_B = -1;
+const int MOTOR_DER_A = -1;
+const int MOTOR_DER_B = -1;
+
+void setup() {
+  // Configura aquí los pines confirmados del driver.
+}
+
+void detener() {
+  // Implementar según el driver instalado.
+}
+
+void loop() {
+  detener();
+}` };
+            }
             if (q.includes("l293") || q.includes("motor") || q.includes("motores")) {
                 return { title: "Código Arduino para L293D y dos motores", code: `// Control básico de dos motores con L293D
 const int ENA = 5;
