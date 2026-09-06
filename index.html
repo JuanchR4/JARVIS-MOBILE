@@ -86,6 +86,8 @@
         const historyPanel = document.getElementById('history-panel');
         const historyList = document.getElementById('history-list');
         let responseHistory = JSON.parse(localStorage.getItem("jarvisResponseHistory") || "[]");
+        let lastTranscript = "";
+        let lastTranscriptAt = 0;
         const synth = window.speechSynthesis;
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition;
@@ -106,8 +108,12 @@
 
         function findLocalAnswer(command) {
             const clean = normalize(command);
-            for (const item of [...localMemory, ...remoteMemory]) {
-                if (item.keys.some(key => clean.includes(normalize(key)))) return item.text;
+            const candidates = [...localMemory, ...remoteMemory].flatMap(item => item.keys.map(key => ({ key: normalize(key), text: item.text })));
+            // Las frases específicas ganan a las palabras cortas y no se dispara por una palabra aislada repetida.
+            candidates.sort((a, b) => b.key.length - a.key.length);
+            for (const item of candidates) {
+                const pattern = new RegExp("(^|\\s)" + item.key.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&") + "($|\\s)");
+                if (pattern.test(clean)) return item.text;
             }
             return null;
         }
@@ -354,7 +360,12 @@ iniciarProyecto();` };
             };
 
             recognition.onresult = (e) => {
-                const cmd = e.results[0][0].transcript.toLowerCase();
+                const cmd = e.results[0][0].transcript.toLowerCase().trim();
+                const now = Date.now();
+                // Chrome puede entregar dos veces el mismo resultado; ignóralo para no repetir respuestas.
+                if (cmd === lastTranscript && now - lastTranscriptAt < 4000) return;
+                lastTranscript = cmd;
+                lastTranscriptAt = now;
                 consoleLog.innerText = "USTED: " + cmd;
 
                 if (handleCodeRequest(cmd)) return;
