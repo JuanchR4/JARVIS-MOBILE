@@ -75,7 +75,6 @@
     {
       "keys": [
         "max mk42",
-        "max",
         "robot max"
       ],
       "text": "Max MK42 es el robot personal de competencia de Juan Luis y representa a Dual Robotics. Antes de generar código específico hay que confirmar placa de control, driver, motores, sensores, pines y voltaje de batería."
