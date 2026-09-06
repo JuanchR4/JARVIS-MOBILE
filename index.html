@@ -121,7 +121,17 @@
                 const topic = data.RelatedTopics.find(x => x.Text);
                 if (topic) text = topic.Text;
             }
-            return text ? text.replace(/\s+/g, " ").trim() : null;
+            if (text) return text.replace(/\s+/g, " ").trim();
+            // Segundo intento: Wikipedia, que permite consultas desde una PWA.
+            const wikiSearch = await fetch(`https://es.wikipedia.org/w/api.php?action=query&list=search&srsearch=${query}&format=json&origin=*`, { signal: AbortSignal.timeout(8000) });
+            if (!wikiSearch.ok) return null;
+            const results = await wikiSearch.json();
+            const title = results.query && results.query.search && results.query.search[0] && results.query.search[0].title;
+            if (!title) return null;
+            const summary = await fetch(`https://es.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`, { signal: AbortSignal.timeout(8000) });
+            if (!summary.ok) return null;
+            const page = await summary.json();
+            return page.extract ? page.extract.replace(/\s+/g, " ").trim() : null;
         }
 
         async function consultMainframe(question) {
