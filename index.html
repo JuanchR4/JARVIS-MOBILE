@@ -95,6 +95,56 @@
             return null;
         }
 
+        // Memoria persistente: las respuestas aprendidas sobreviven al refresco.
+        const learnedMemory = JSON.parse(localStorage.getItem("jarvisMemory") || "[]");
+        function findLearnedAnswer(command) {
+            const clean = normalize(command);
+            const item = learnedMemory.find(x => clean.includes(normalize(x.key)));
+            return item ? item.text : null;
+        }
+        function saveLearnedAnswer(question, answer) {
+            const key = normalize(question).replace(/^(jarvis|oye jarvis)\s+/, "").slice(0, 100);
+            if (!key || !answer) return;
+            const old = learnedMemory.findIndex(x => x.key === key);
+            if (old >= 0) learnedMemory[old] = { key, text: answer };
+            else learnedMemory.unshift({ key, text: answer });
+            localStorage.setItem("jarvisMemory", JSON.stringify(learnedMemory.slice(0, 100)));
+        }
+
+        async function searchInternet(question) {
+            const query = encodeURIComponent(question.replace(/\bjarvis\b/gi, "").trim());
+            const response = await fetch(`https://api.duckduckgo.com/?q=${query}&format=json&no_html=1&skip_disambig=1`, { signal: AbortSignal.timeout(8000) });
+            if (!response.ok) throw new Error("search failed");
+            const data = await response.json();
+            let text = data.AbstractText || "";
+            if (!text && Array.isArray(data.RelatedTopics)) {
+                const topic = data.RelatedTopics.find(x => x.Text);
+                if (topic) text = topic.Text;
+            }
+            return text ? text.replace(/\s+/g, " ").trim() : null;
+        }
+
+        async function consultMainframe(question) {
+            mainframeStatus.innerText = "MAINFRAME: BUSCANDO EN INTERNET...";
+            mainframeStatus.style.color = "#ffcc00";
+            consoleLog.innerText = "MAINFRAME: CONSULTANDO...";
+            try {
+                const answer = await searchInternet(question);
+                if (answer) {
+                    const shortAnswer = answer.length > 600 ? answer.slice(0, 597) + "..." : answer;
+                    saveLearnedAnswer(question, shortAnswer);
+                    speak(shortAnswer + " He guardado este dato en mi memoria local.");
+                    return;
+                }
+                speak("No encontré una respuesta confiable en la búsqueda. La pregunta queda pendiente para el mainframe.");
+            } catch (error) {
+                speak("No pude conectarme al buscador en este momento. La pregunta queda pendiente para el mainframe.");
+            } finally {
+                mainframeStatus.innerText = "MAINFRAME: CONECTADO";
+                mainframeStatus.style.color = "var(--glow)";
+            }
+        }
+
         const cursor = document.getElementById('cursor');
         document.addEventListener('mousemove', e => {
             cursor.style.left = e.clientX + 'px';
@@ -156,15 +206,13 @@
                 const cmd = e.results[0][0].transcript.toLowerCase();
                 consoleLog.innerText = "USTED: " + cmd;
 
-                const answer = findLocalAnswer(cmd);
+                const answer = findLocalAnswer(cmd) || findLearnedAnswer(cmd);
                 if (answer) {
                     speak(answer);
                 } else {
-                    // La página estática no puede leer la respuesta de Zapia por sí sola.
-                    // Deja la consulta visible y vuelve a escuchar, sin quedarse bloqueada.
-                    mainframeStatus.innerText = "MAINFRAME: CONSULTA PENDIENTE";
-                    mainframeStatus.style.color = "#ffcc00";
-                    speak("No tengo ese dato guardado. La consulta queda enviada al mainframe; pregúnteme aquí para recibir la respuesta y cargarla en mi memoria.");
+                    // Consulta automática: busca una respuesta y la guarda en memoria.
+                    if (recognition) recognition.stop();
+                    consultMainframe(cmd);
                 }
             };
 
