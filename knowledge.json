@@ -1,0 +1,35 @@
+{
+  "version": "1.0",
+  "project": "Dual Robotics Industries",
+  "notes": [
+    "No asumir pines, voltajes, motores ni sensores del robot Max MK42 sin confirmarlos.",
+    "Antes de recomendar una conexión eléctrica, revisar el datasheet del componente y separar alimentación de lógica.",
+    "Para investigar: buscar el número exacto de pieza, priorizar datasheet del fabricante, contrastar al menos dos fuentes y distinguir hechos de recomendaciones."
+  ],
+  "facts": [
+    {"keys":["l293d","l 293 d","driver l293d"],"text":"El L293D trabaja con alimentación del motor de hasta 36 V y entrega hasta 600 mA por canal. Tiene cuatro canales de medio puente y diodos internos de protección."},
+    {"keys":["l298n","driver l298n"],"text":"El módulo L298N es un puente H doble. Su tensión máxima típica de alimentación del motor es 35 V y la corriente depende del módulo, la disipación y el fabricante; hay que revisar su ficha concreta antes de exigir 2 A continuos."},
+    {"keys":["arduino uno","arduino"],"text":"Arduino Uno usa lógica de 5 V y sus pines no deben alimentar motores directamente. Los motores requieren un driver y una fuente separada, con tierra común cuando corresponda."},
+    {"keys":["esp32"],"text":"ESP32 normalmente trabaja con lógica de 3.3 V. No se debe aplicar 5 V directamente a sus GPIO; para señales de 5 V se necesita adaptación de nivel."},
+    {"keys":["hc-sr04","sensor ultrasonico","sensor ultrasónico"],"text":"El HC-SR04 mide distancia con ultrasonido usando TRIG y ECHO. En versiones de 5 V, ECHO puede entregar 5 V y debe adaptarse antes de conectarlo a un GPIO de 3.3 V."},
+    {"keys":["servo","servomotor"],"text":"Un servomotor necesita alimentación capaz de entregar sus picos de corriente. No conviene alimentar varios servos desde el regulador de una placa; se recomienda fuente separada y tierra común."},
+    {"keys":["hc-05","bluetooth"],"text":"El HC-05 se usa como enlace Bluetooth serial. Hay que comprobar el nivel lógico de RX y TX de la placa concreta y cruzar TX con RX."},
+    {"keys":["pwm"],"text":"PWM permite controlar velocidad o potencia promedio variando el ciclo de trabajo. La frecuencia y los pines disponibles dependen de la placa y del periférico."},
+    {"keys":["bateria","batería","alimentacion","alimentación"],"text":"Para elegir una batería hay que conocer voltaje nominal, voltaje máximo cargada, corriente continua, corriente de pico y consumo real del sistema. Nunca conectar una batería solo por el valor nominal."},
+    {"keys":["max mk42","max","robot max"],"text":"Max MK42 es el robot personal de competencia de Juan Luis y representa a Dual Robotics. Antes de generar código específico hay que confirmar placa de control, driver, motores, sensores, pines y voltaje de batería."}
+  ],
+  "max_code_starters": [
+    {"name":"prueba de motores L293D","language":"arduino","purpose":"Girar dos motores adelante, detenerlos y dejar pines configurables."},
+    {"name":"lectura HC-SR04","language":"arduino","purpose":"Medir distancia y detener motores ante un obstáculo; requiere confirmar pines y lógica."},
+    {"name":"control de servo","language":"arduino","purpose":"Mover un servo con límites y pausa; requiere confirmar fuente y modelo."},
+    {"name":"control Bluetooth","language":"arduino","purpose":"Recibir comandos seriales para avanzar, retroceder, girar y detener; requiere confirmar módulo y baudrate."}
+  ],
+  "research_protocol": [
+    "Identificar la referencia exacta del componente.",
+    "Consultar primero el datasheet del fabricante.",
+    "Contrastar tensión, corriente, lógica, límites térmicos y conexiones con otra fuente.",
+    "No convertir corriente pico en corriente continua.",
+    "Responder con la fuente y advertir cuando falten datos del montaje.",
+    "Guardar en memoria solo datos comprobados o marcados como pendientes."
+  ]
+}
