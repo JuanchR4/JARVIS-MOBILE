@@ -1,0 +1,7 @@
+name = "jarvis-claude-bridge"
+main = "worker.js"
+compatibility_date = "2026-10-13"
+
+[vars]
+# Set CLAUDE_MODEL to a current model ID shown in Claude's official model docs.
+# Do not put API keys or access secrets in this file.
